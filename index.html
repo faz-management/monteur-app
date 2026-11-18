@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16324f">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FAZ Zeiterfassung</title>
+<style>
+  :root{
+    --bg:#f3f5f7; --card:#ffffff; --ink:#14202b; --muted:#5d6b78; --line:#d9dfe5;
+    --kommen:#1f7a3d; --pause:#b26b00; --weiter:#1f5f9e; --gehen:#a12b2b;
+    --brand:#16324f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1720; --card:#17222d; --ink:#e8eef3; --muted:#9aa8b4; --line:#2a3946; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+  header{background:var(--brand);color:#fff;padding:14px 16px calc(14px) 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  header .t{font-weight:700;font-size:18px;letter-spacing:.2px}
+  header .n{font-size:14px;opacity:.85}
+  .lang{display:flex;gap:4px}
+  .lang button{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:6px 10px;font-size:14px}
+  .lang button.on{background:#fff;color:var(--brand)}
+  main{max-width:520px;margin:0 auto;padding:16px}
+  .status{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .status .big{font-size:22px;font-weight:700;margin-top:2px}
+  .tk.gata{opacity:.6;filter:grayscale(1)}
+.status .small{color:var(--muted);font-size:14px;margin-top:4px}
+  .clock{font-variant-numeric:tabular-nums;font-size:40px;font-weight:700;text-align:center;margin:6px 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{border:0;border-radius:14px;color:#fff;font-size:22px;font-weight:700;padding:26px 8px;min-height:104px;
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .btn small{font-size:14px;font-weight:500;opacity:.9}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.35}
+  .k{background:var(--kommen)} .p{background:var(--pause)} .w{background:var(--weiter)} .g{background:var(--gehen)}
+  .msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:15px;display:none}
+  .msg.ok{display:block;background:#e3f3e8;color:#14532d}
+  .msg.warn{display:block;background:#fff4dc;color:#6b4200}
+  .msg.err{display:block;background:#fde6e6;color:#7f1d1d}
+  .today{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+  .today h2{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:600}
+  .today ul{list-style:none;margin:0;padding:0}
+  .today li{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:16px}
+  .today li:first-child{border-top:0}
+  .today .q{color:var(--pause);font-size:13px}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin:18px 0 8px;line-height:1.5}
+  .setup{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;font-size:16px;line-height:1.5}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px}
+  .overlay.on{display:flex}
+  .dlg{background:var(--card);color:var(--ink);border-radius:14px;padding:20px;max-width:420px;width:100%}
+  .dlg p{font-size:18px;margin:0 0 16px}
+  .dlg .row{display:flex;gap:10px}
+  .dlg button{flex:1;font-size:18px;padding:14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  .dlg button.yes{background:var(--brand);color:#fff;border-color:var(--brand)}
+  #setup{max-width:520px;margin:0 auto;padding:16px;display:none}
+  #setup.on{display:block}
+  #setup h1{font-size:22px;margin:4px 0 12px}
+  #setup label.f{display:block;font-size:15px;color:var(--muted);margin:14px 0 6px}
+  #setup input[type=text]{width:100%;font-size:20px;padding:14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .dsi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:14px;line-height:1.5;max-height:46vh;overflow:auto}
+  .dsi ul{margin:0;padding-left:18px} .dsi li{margin:6px 0}
+  .opt{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px;font-size:16px;line-height:1.4}
+  .opt input{width:26px;height:26px;flex:none;margin:0}
+  .save{width:100%;margin-top:16px;font-size:20px;font-weight:700;padding:18px;border:0;border-radius:14px;background:var(--brand);color:#fff}
+  .linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:13px;margin-top:6px;padding:8px}
+  /* Reiter (Monteur-App Stufe 1) */
+  body{padding-bottom:84px}
+  .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);z-index:5;padding-bottom:env(safe-area-inset-bottom)}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-size:15px;font-weight:600;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tabs button .ic{font-size:22px;line-height:1}
+  .tabs button.on{color:var(--brand)}
+  @media (prefers-color-scheme: dark){ .tabs button.on{color:#8fc1ff} }
+  .pane{display:none} .pane.on{display:block}
+  .day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .day h3{margin:0 0 6px;font-size:17px}
+  .day.today{border-color:var(--brand);border-width:2px}
+  .day .none{color:var(--muted);font-size:15px}
+  .ev{padding:8px 0;border-top:1px solid var(--line)}
+  .ev:first-of-type{border-top:0}
+  .ev .b{font-size:18px;font-weight:700;line-height:1.3}
+  .ev .l{font-size:14px;color:var(--muted);margin-top:2px}
+  .ev .h{font-size:14px;margin-top:4px}
+  .ev .res{display:inline-block;background:#fff4dc;color:#6b4200;border-radius:6px;padding:1px 7px;font-size:13px;margin-left:6px;vertical-align:middle}
+  .proj{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
+  .proj .pn{font-size:14px;color:var(--muted);margin-bottom:4px}
+  .tk{background:var(--bg);border-radius:10px;padding:10px 12px;margin:6px 0}
+  .tk .tn{font-size:17px;font-weight:700}
+  .tk .tm{font-size:14px;color:var(--muted);margin-top:2px}
+  .tk ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.4}
+  .tk li.done{text-decoration:line-through;color:var(--muted)}
+  .tk a{display:inline-block;margin-top:8px;background:var(--brand);color:#fff;text-decoration:none;border-radius:8px;padding:8px 14px;font-size:15px;font-weight:600}
+  .stand{color:var(--muted);font-size:13px;text-align:center;margin:8px 0}
+  .reload{width:100%;font-size:17px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);margin-top:4px}
+  /* Stufe 2: geführter Ablauf */
+  .tk.ready{border:2px solid var(--kommen)}
+  .step{border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
+  .step .sh{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .step.ok .sh{color:var(--kommen)}
+  .cam{font-size:16px;font-weight:700;padding:12px 14px;border-radius:10px;border:0;background:var(--weiter);color:#fff;width:100%}
+  .chk{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:16px;line-height:1.35}
+  .chk input{width:26px;height:26px;flex:none;margin:0}
+  .chk.done span{text-decoration:line-through;color:var(--muted)}
+  .fld{margin:8px 0}.fld .fl{font-size:13px;color:var(--muted);margin-bottom:3px}
+  .fld select,.fld input{width:100%;font-size:17px;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .fld.rot select,.fld.rot input{border:2px solid var(--gehen);background:#fde6e6;color:#14202b}.fld.rot .fl{color:var(--gehen);font-weight:700}
+  .fi{display:flex;gap:8px;margin-top:6px}.fi input{flex:1;min-width:0;font-size:17px;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}.fi .sv{flex:none;font-size:16px;font-weight:700;padding:0 18px;border-radius:10px;border:0;background:var(--brand);color:#fff}
+  .miss{background:#fff4dc;color:#6b4200;border-radius:8px;padding:8px 10px;font-size:14px;margin-bottom:8px}
+  .row6{display:flex;gap:10px}.row6 button{flex:1;font-size:18px;font-weight:700;padding:16px 8px;border-radius:12px;border:0;color:#fff}
+  .fin{background:var(--kommen)}.fin[disabled]{opacity:.35}.prob{background:var(--gehen)}
+  .probbox{display:flex;flex-direction:column;gap:8px;margin:8px 0}.probbox select,.probbox input{font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .probbox .prob{padding:12px;border:0;border-radius:10px;color:#fff;font-size:17px;font-weight:700}.probbox textarea{font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:inherit}
+  .neu{width:100%;margin-top:12px;font-size:18px;font-weight:700;padding:16px;border-radius:12px;border:0;background:var(--weiter);color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .okline{margin-top:8px;color:var(--kommen);font-weight:700;font-size:16px}
+  /* Fotos aus Fieldwire und Offline-Warteschlange */
+  .pics{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .pics a,.pics span.pic{display:block;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--line);position:relative;background:var(--card)}
+  .pics img{width:100%;height:100%;object-fit:cover;display:block}
+  .pics .wait{position:absolute;left:0;right:0;bottom:0;background:rgba(178,107,0,.85);color:#fff;font-size:11px;text-align:center;padding:1px 0}
+  .pend{display:inline-block;background:#fff4dc;color:#6b4200;border-radius:6px;padding:1px 7px;font-size:13px;margin-left:6px;vertical-align:middle}
+  .chk.pend2 span{color:#6b4200}
+
+/* Reiter Stunden (17.11.2026) */
+.sk{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.sk h3{margin:0 0 8px;font-size:15px;color:var(--muted);font-weight:600}
+.sk .big{font-size:34px;font-weight:700;line-height:1.1}
+.sk .sub{font-size:14px;color:var(--muted);margin-top:4px}
+.sk3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sk3 .l{font-size:12px;color:var(--muted)} .sk3 .v{font-size:21px;font-weight:700}
+.plus{color:var(--kommen)} .minus{color:var(--gehen)}
+@media (prefers-color-scheme: dark){ .plus{color:#6fd08c} .minus{color:#ff8f8f} }
+.skr{display:grid;grid-template-columns:64px 1fr 52px 60px;gap:4px;padding:7px 0;border-top:1px solid var(--line);font-size:15px;align-items:baseline}
+.skr .r{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.skr .m{color:var(--muted)}
+.skn{font-size:12px;color:var(--pause);grid-column:1 / -1}
+.skw{font-weight:700;margin-top:10px;padding-top:8px;border-top:2px solid var(--line);display:flex;justify-content:space-between;font-size:15px}
+.skw.kopf{border-top:0;margin-top:0;padding-top:0;margin-bottom:4px}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="t">FAZ Zeiterfassung</div><div class="n" id="who">&nbsp;</div></div>
+  <div class="lang"><button id="l-ro">RO</button><button id="l-de">DE</button></div>
+</header>
+<main id="main">
+<div class="pane on" id="p-stempel">
+  <div class="clock" id="clock">--:--</div>
+  <div class="status">
+    <div class="small" data-i="statusLabel"></div>
+    <div class="big" id="state"></div>
+    <div class="small" id="last"></div>
+  </div>
+  <div class="grid">
+    <button class="btn k" data-typ="Kommen"><span data-i="kommen"></span><small data-i="kommenSub"></small></button>
+    <button class="btn g" data-typ="Gehen"><span data-i="gehen"></span><small data-i="gehenSub"></small></button>
+    <button class="btn p" data-typ="Pause Beginn"><span data-i="pause"></span><small data-i="pauseSub"></small></button>
+    <button class="btn w" data-typ="Pause Ende"><span data-i="weiter"></span><small data-i="weiterSub"></small></button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="today"><h2 data-i="heute"></h2><ul id="list"></ul></div>
+  <div class="foot" id="foot"></div>
+</div>
+<div class="pane" id="p-azi">
+  <div id="aziBox"></div>
+  <div class="stand" id="aziStand"></div>
+  <button class="reload" id="aziReload"></button>
+</div>
+<div class="pane" id="p-sapt">
+  <div id="saptBox"></div>
+  <div class="stand" id="saptStand"></div>
+</div>
+<div class="pane" id="p-std">
+<div id="stdBox"></div>
+<button class="reload" id="stdReload"></button>
+</div>
+<div class="pane" id="p-auf">
+  <h2 data-i="aufTitle"></h2>
+  <div id="aufBox"></div>
+</div>
+</main>
+<input type="file" id="fotoInput" accept="image/*" style="display:none">
+<nav class="tabs" id="tabs">
+  <button data-p="stempel" class="on"><span class="ic">&#9201;</span><span data-i="tabStempel"></span></button>
+  <button data-p="azi"><span class="ic">&#128203;</span><span data-i="tabAzi"></span></button>
+  <button data-p="sapt"><span class="ic">&#128197;</span><span data-i="tabSapt"></span></button>
+  <button data-p="std"><span class="ic">&#128338;</span><span data-i="tabStd"></span></button>
+<button data-p="auf" id="tabAuf" style="display:none"><span class="ic">&#128101;</span><span data-i="tabAuf"></span></button>
+</nav>
+<section id="setup">
+  <h1 data-i="sTitle"></h1>
+  <label class="f" for="sName" data-i="sName"></label>
+  <input type="text" id="sName" autocomplete="name">
+  <label class="f" data-i="sDsiTitle"></label>
+  <div class="dsi"><ul id="sDsi"></ul></div>
+  <label class="opt"><input type="checkbox" id="sRead"><span data-i="sRead"></span></label>
+  <label class="f" data-i="sGpsTitle"></label>
+  <label class="opt"><input type="radio" name="sGps" id="sGpsJa"><span data-i="sGpsJa"></span></label>
+  <label class="opt"><input type="radio" name="sGps" id="sGpsNein"><span data-i="sGpsNein"></span></label>
+  <div class="msg" id="sMsg"></div>
+  <button class="save" id="sSave" data-i="sSave"></button>
+</section>
+<div class="overlay" id="ov"><div class="dlg"><p id="ovText"></p><div class="row"><button id="ovNo"></button><button class="yes" id="ovYes"></button></div></div></div>
+
+<script src="app.js?v=28"></script>
+
+</body>
+</html>
