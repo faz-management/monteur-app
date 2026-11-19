@@ -3,7 +3,7 @@
    ENDPOINT: Web-App-URL des Google-Apps-Script (endet auf /exec).
    Wird die Seite direkt aus Apps Script ausgeliefert, wird der Wert automatisch gesetzt. */
 /* V28 (18.11.2026): Oberfläche liegt auf GitHub Pages (offlinefähig), Server bleibt Apps Script. */
-var APP_VERSION = "28";
+var APP_VERSION = "29";
 var EPS = {
   live: "https://script.google.com/macros/s/AKfycbyvvbt__AT77uIZXixBWaxYZk5A8xAdyJMF3qZcngFnpnOTZ5b0EOSP0CuSSRKXKMtE-g/exec",
   test: "https://script.google.com/macros/s/AKfycbxY7Otv8aduO8SyULy5SAcxsrWd5kuetX8wKVdYde4psC_k6OuF3TUP_S1YZRHZumWcSw/exec"
@@ -25,7 +25,7 @@ var T = {
       pOffline:"Fără internet – ultimul plan salvat",pStand:"Actualizat la ",pReload:"Actualizează",pTomorrow:"Mâine",pToday:"Azi",
       pWith:"Cu: ",pRes:"cu rezervă",pOpen:"tichete deschise",pNoProj:"Fără proiect Fieldwire pentru acest termen",
       pMore:"… și încă ",pPlan:"Plan (Fieldwire)",pNoName:"Acest telefon nu are nume pentru calendar. Vă rugăm contactați biroul.",
-      pErr:"Planul nu a putut fi încărcat.",pRoom:"Camera ",pLevel:"Nivel ",pCarry:"reportat din ziua anterioară",tkS1:"Găsește trecerea",tkS2:"Foto înainte",tkS3:"Ce este de făcut",tkS4:"Date de completat",tkS5:"Foto după",tkS6:"Încheiere",tkFoto:"Fă o poză",tkFotoMehr:"Încă o poză",tkUpload:"Se trimite poza…",tkKeinePunkte:"Nicio listă de lucrări în tichet – întreabă biroul.",tkPunktNeu:"Ce ai mai făcut / observații",tkPunktAdd:"Adaugă punct",tkWaehlen:"– alege –",tkFehlt:"Lipsește:",tkUebernehmen:"Salvează datele",tkMatFrage:"Ce material ai folosit? Modifică doar ce nu este corect.",tkMatExtra:"Alt material / observații",tkMatOk:"Corect – trimite GATA",tkMatLeer:"Nu există estimare – scrie materialul folosit.",tkMatLaden:"Se calculează materialul…",tkFertig:"GATA",tkFertigFrage:"Trecerea este gata și totul este completat?",tkProblem:"Problemă",tkGrundText:"Scrie sau dictează care este problema",tkMelden:"Trimite la birou",tkNeu:"Trecere nouă găsită",tkNeuName:"Numărul # din Fieldwire",tkNeuGo:"Preia",tkNeuHinweis:"Mai întâi creează trecerea în aplicația Fieldwire, direct pe plan, la locul corect. Apoi introdu aici numărul # din Fieldwire.",tkNeuNicht:"Numărul nu a fost găsit în acest proiect.",tkMat:"Material pentru ",tkProblemFoto:"Poză (opțional, înainte de text)",tkKeinPin:"Lipsește pinul pe plan: pune-l în Fieldwire, apoi revino în aplicație.",tkDone:"Gata – trimis la birou",tkProblemDone:"Problemă trimisă la birou",tkVoll:"Memoria telefonului este plină. Încearcă din nou când ai internet.",tkNurOnline:"Pentru aceasta este nevoie de internet.",tkFotosAlt:"Poze existente",zuAlt:"Pontaj mai vechi de 24 de ore – nu a fost trimis. Anunță biroul.",tkWarte:"în așteptare: ",days:["Duminică","Luni","Marți","Miercuri","Joi","Vineri","Sâmbătă"],
+      pErr:"Planul nu a putut fi încărcat.",pRoom:"Camera ",pLevel:"Nivel ",pCarry:"reportat din ziua anterioară",tkS1:"Găsește trecerea",tkS2:"Foto înainte",tkS3:"Ce este de făcut",tkS4:"Date de completat",tkS5:"Foto după",tkS6:"Încheiere",tkFoto:"Fă o poză",tkFotoMehr:"Încă o poză",tkUpload:"Se trimite poza…",tkKeinePunkte:"Nicio listă de lucrări în tichet – întreabă biroul.",tkPunktNeu:"Ce ai mai făcut / observații",tkPunktAdd:"Adaugă punct",tkWaehlen:"– alege –",tkFehlt:"Lipsește:",tkUebernehmen:"Salvează datele",tkMatFrage:"Ce material ai folosit? Modifică doar ce nu este corect.",tkMatExtra:"Alt material / observații",tkMatOk:"Corect – trimite GATA",tkMatLeer:"Nu există estimare – scrie materialul folosit.",tkMatLaden:"Se calculează materialul…",tkFertig:"GATA",tkFertigFrage:"Trecerea este gata și totul este completat?",tkProblem:"Problemă",tkGrundText:"Scrie sau dictează care este problema",tkMelden:"Trimite la birou",tkNeu:"Trecere nouă găsită",tkNeuName:"Numărul # din Fieldwire",tkNeuGo:"Preia",tkNeuHinweis:"Mai întâi creează trecerea în aplicația Fieldwire, direct pe plan, la locul corect. Apoi introdu aici numărul # din Fieldwire.",tkNeuNicht:"Numărul nu a fost găsit în acest proiect.",tkMat:"Material pentru ",tkProblemFoto:"Poză (opțional, înainte de text)",tkKeinPin:"Lipsește pinul pe plan: pune-l în Fieldwire, apoi revino în aplicație.",tkDone:"Gata – trimis la birou",tkProblemDone:"Problemă trimisă la birou",tkVoll:"Memoria telefonului este plină. Încearcă din nou când ai internet.",tkNurOnline:"Pentru aceasta este nevoie de internet.",tkFotosAlt:"Poze existente",zuAlt:"Pontaj mai vechi de 24 de ore – nu a fost trimis. Anunță biroul.",tkWarte:"în așteptare: ",tkGalerie:"Poză din galerie",days:["Duminică","Luni","Marți","Miercuri","Joi","Vineri","Sâmbătă"],
       foot:"Locația se salvează doar în momentul apăsării unui buton, nu în restul timpului.",
       footNoGps:"Pentru acest telefon nu se salvează nicio locație.",
       names:{"Kommen":"Sosire","Gehen":"Plecare","Pause Beginn":"Început pauză","Pause Ende":"Sfârșit pauză"},
@@ -55,7 +55,7 @@ var T = {
       pOffline:"Kein Internet – letzter gespeicherter Plan",pStand:"Stand ",pReload:"Aktualisieren",pTomorrow:"Morgen",pToday:"Heute",
       pWith:"Mit: ",pRes:"mit Vorbehalt",pOpen:"offene Tickets",pNoProj:"Kein Fieldwire-Projekt zu diesem Termin",
       pMore:"… und noch ",pPlan:"Plan (Fieldwire)",pNoName:"Für dieses Handy ist kein Kalendername hinterlegt. Bitte im Büro melden.",
-      pErr:"Plan konnte nicht geladen werden.",pRoom:"Raum ",pLevel:"Ebene ",pCarry:"vom Vortag übertragen",tkS1:"Schott finden",tkS2:"Foto vorher",tkS3:"Was zu tun ist",tkS4:"Angaben eintragen",tkS5:"Foto nachher",tkS6:"Abschluss",tkFoto:"Foto machen",tkFotoMehr:"Noch ein Foto",tkUpload:"Foto wird gesendet…",tkKeinePunkte:"Keine Arbeitsliste im Ticket – bitte im Büro fragen.",tkPunktNeu:"Was noch gemacht wurde / Bemerkung",tkPunktAdd:"Punkt hinzufügen",tkWaehlen:"– wählen –",tkFehlt:"Es fehlt:",tkUebernehmen:"Angaben übernehmen",tkMatFrage:"Welches Material hast du verbraucht? Nur ändern, was nicht stimmt.",tkMatExtra:"Weiteres Material / Bemerkung",tkMatOk:"Passt – FERTIG melden",tkMatLeer:"Keine Schätzung – bitte verbrauchtes Material eintragen.",tkMatLaden:"Material wird berechnet…",tkFertig:"FERTIG",tkFertigFrage:"Ist das Schott fertig und alles eingetragen?",tkProblem:"Problem",tkGrundText:"Problem eintippen oder diktieren",tkMelden:"Ans Büro melden",tkNeu:"Neues Schott gefunden",tkNeuName:"#-Nummer aus Fieldwire",tkNeuGo:"Übernehmen",tkNeuHinweis:"Zuerst in der Fieldwire-App das Schott direkt auf dem Plan an der richtigen Stelle anlegen. Dann hier die #-Nummer aus Fieldwire eingeben.",tkNeuNicht:"Nummer in diesem Projekt nicht gefunden.",tkMat:"Material für ",tkProblemFoto:"Foto (freiwillig, vor dem Text)",tkKeinPin:"Pin im Plan fehlt: in Fieldwire setzen, dann zurück in die App.",tkDone:"Fertig – ans Büro gemeldet",tkProblemDone:"Problem ans Büro gemeldet",tkVoll:"Handyspeicher voll. Bei Internet erneut versuchen.",tkNurOnline:"Dafür ist Internet nötig.",tkFotosAlt:"Vorhandene Fotos",zuAlt:"Stempelung älter als 24 Stunden – nicht gesendet. Bitte im Büro melden.",tkWarte:"wartet: ",days:["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],
+      pErr:"Plan konnte nicht geladen werden.",pRoom:"Raum ",pLevel:"Ebene ",pCarry:"vom Vortag übertragen",tkS1:"Schott finden",tkS2:"Foto vorher",tkS3:"Was zu tun ist",tkS4:"Angaben eintragen",tkS5:"Foto nachher",tkS6:"Abschluss",tkFoto:"Foto machen",tkFotoMehr:"Noch ein Foto",tkUpload:"Foto wird gesendet…",tkKeinePunkte:"Keine Arbeitsliste im Ticket – bitte im Büro fragen.",tkPunktNeu:"Was noch gemacht wurde / Bemerkung",tkPunktAdd:"Punkt hinzufügen",tkWaehlen:"– wählen –",tkFehlt:"Es fehlt:",tkUebernehmen:"Angaben übernehmen",tkMatFrage:"Welches Material hast du verbraucht? Nur ändern, was nicht stimmt.",tkMatExtra:"Weiteres Material / Bemerkung",tkMatOk:"Passt – FERTIG melden",tkMatLeer:"Keine Schätzung – bitte verbrauchtes Material eintragen.",tkMatLaden:"Material wird berechnet…",tkFertig:"FERTIG",tkFertigFrage:"Ist das Schott fertig und alles eingetragen?",tkProblem:"Problem",tkGrundText:"Problem eintippen oder diktieren",tkMelden:"Ans Büro melden",tkNeu:"Neues Schott gefunden",tkNeuName:"#-Nummer aus Fieldwire",tkNeuGo:"Übernehmen",tkNeuHinweis:"Zuerst in der Fieldwire-App das Schott direkt auf dem Plan an der richtigen Stelle anlegen. Dann hier die #-Nummer aus Fieldwire eingeben.",tkNeuNicht:"Nummer in diesem Projekt nicht gefunden.",tkMat:"Material für ",tkProblemFoto:"Foto (freiwillig, vor dem Text)",tkKeinPin:"Pin im Plan fehlt: in Fieldwire setzen, dann zurück in die App.",tkDone:"Fertig – ans Büro gemeldet",tkProblemDone:"Problem ans Büro gemeldet",tkVoll:"Handyspeicher voll. Bei Internet erneut versuchen.",tkNurOnline:"Dafür ist Internet nötig.",tkFotosAlt:"Vorhandene Fotos",zuAlt:"Stempelung älter als 24 Stunden – nicht gesendet. Bitte im Büro melden.",tkWarte:"wartet: ",tkGalerie:"Foto aus der Galerie",days:["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],
       foot:"Der Standort wird nur im Moment des Knopfdrucks gespeichert, sonst nie.",
       footNoGps:"Für dieses Handy wird kein Standort gespeichert.",
       names:{"Kommen":"Kommen","Gehen":"Gehen","Pause Beginn":"Pausenbeginn","Pause Ende":"Pausenende"},
@@ -300,7 +300,7 @@ function evNode(ev,withTickets){
       var pn=el("div","pn",pr.name+" · "+pr.gesamt+" "+t("pOpen"));
       if(pr.uebertrag) pn.appendChild(el("span","res",t("pCarry")));
       p.appendChild(pn);
-      pr.tickets.forEach(function(tk){ p.appendChild(tkNode(pr,tk)); });
+      if(istPro7(pr)) p.appendChild(ordnerNode(pr)); else pr.tickets.forEach(function(tk){ p.appendChild(tkNode(pr,tk)); });
       // Neues Schott vor Ort gefunden (Anja, 27.10.2026): in Fieldwire auf dem Plan anlegen, hier die #-Nummer eingeben, danach gleicher Ablauf
       var nbtn=el("button","neu","+ "+t("tkNeu"));
       nbtn.onclick=function(){
@@ -320,6 +320,40 @@ function evNode(ev,withTickets){
     });
   }
   return d;
+}
+/* ===== Pro7: Ordneransicht (Florin 19.11.2026) =====
+   Nur Offen und Zu Schotten (Geschottet kommt vom Server nicht mehr), aufklappbar: Status → Bauteil (BT B / BT C) → Ebene.
+   Bauteil und Ebene aus dem Ticketnamen ("BT B OG.2"), sonst "BT ?" bzw. Ebene vom Server. */
+var fAuf={}; try{ fAuf=JSON.parse(localStorage.getItem("faz_ordner")||"{}")||{}; }catch(e){ fAuf={}; }
+function istPro7(pr){ return /pro7|prosieben/i.test(String(pr&&pr.name||"")); }
+var EB_ORD=["UG.2","UG.1","EG","OG.1","OG.2","OG.3","OG.4","OG.5","OG.6","DG"];
+function tkBT(tk){ var m=String(tk.name||"").match(/\bBT[\s.\-]*([ABC])\b/i); return m?"BT "+m[1].toUpperCase():"BT ?"; }
+function tkEbene(tk){ var m=String(tk.name||"").match(/\b(UG|OG)[\s.]*(\d)\b|\b(EG|DG)\b/i); if(m) return m[3]?m[3].toUpperCase():m[1].toUpperCase()+"."+m[2]; return tk.eb?t("pLevel")+tk.eb:"?"; }
+function ebRang(e){ var i=EB_ORD.indexOf(e); return i<0?99:i; }
+function fNode(label,n,key,lvl){
+  var w=el("div","fo f"+lvl); var h=el("div","fh",(fAuf[key]?"▼ ":"▶ ")+label+" ("+n+")");
+  h.onclick=function(){ fAuf[key]=!fAuf[key]; try{ localStorage.setItem("faz_ordner",JSON.stringify(fAuf)); }catch(e){} renderPlan(); };
+  w.appendChild(h); var b=el("div","fb"); w.appendChild(b); return {head:w, body:b};
+}
+function ordnerNode(pr){
+  var box=el("div","ordner");
+  var zu=function(s){ return s==="Zu Schotten"||s==="In Bearbeitung"; };
+  var list=(pr.tickets||[]).filter(function(tk){ return tk.status!=="Geschottet"||tk._jetzt; });
+  [["Offen",function(s){ return !zu(s); }],["Zu Schotten",zu]].forEach(function(g){
+    var tks=list.filter(function(tk){ return g[1](tk._vorher||tk.status); });
+    if(!tks.length) return;
+    var k1=pr.id+"|"+g[0], f1=fNode(g[0],tks.length,k1,1); box.appendChild(f1.head); if(!fAuf[k1]) return;
+    var bts={}; tks.forEach(function(tk){ var b=tkBT(tk); (bts[b]=bts[b]||[]).push(tk); });
+    Object.keys(bts).sort().forEach(function(b){
+      var k2=k1+"|"+b, f2=fNode(b,bts[b].length,k2,2); f1.body.appendChild(f2.head); if(!fAuf[k2]) return;
+      var ebs={}; bts[b].forEach(function(tk){ var e=tkEbene(tk); (ebs[e]=ebs[e]||[]).push(tk); });
+      Object.keys(ebs).sort(function(a,c){ return (ebRang(a)-ebRang(c))||a.localeCompare(c); }).forEach(function(e){
+        var k3=k2+"|"+e, f3=fNode(e,ebs[e].length,k3,3); f2.body.appendChild(f3.head); if(!fAuf[k3]) return;
+        ebs[e].sort(function(a,c){ return a.nr-c.nr; }).forEach(function(tk){ f3.body.appendChild(tkNode(pr,tk)); });
+      });
+    });
+  });
+  return box;
 }
 function dayNode(tag,label,withTickets,isToday){
   var d=el("div","day"+(isToday?" today":""));
@@ -456,7 +490,8 @@ function tkFind(id){
 }
 function tkUpdate(id, neu){
   var f=tkFind(id); if(!f){ loadPlan(true); return; } // nicht gefunden: Plan frisch laden statt nichts anzuzeigen
-  f.alle.forEach(function(x){ Object.keys(neu).forEach(function(k){ x.tk[k]=neu[k]; }); });
+  f.alle.forEach(function(x){ var alt=x.tk.status; Object.keys(neu).forEach(function(k){ x.tk[k]=neu[k]; });
+    if(x.tk.status==="Geschottet"&&alt&&alt!=="Geschottet"){ x.tk._jetzt=true; x.tk._vorher=alt; } }); // Pro7-Ordner: heute fertig gemeldet bleibt bis zum Neuladen sichtbar
   ls("faz_plan",JSON.stringify(plan)); renderPlan();
 }
 function tkSend(pr, tk, payload, btn){
@@ -476,9 +511,11 @@ function tkSend(pr, tk, payload, btn){
     return r;
   }).catch(function(){ tkBusy[tk.id]=false; if(btn) btn.disabled=false; return tqPush(pr,tk,payload).then(function(){return null}); });
 }
-function fotoAufnehmen(pr, tk, art, btn){
+function fotoAufnehmen(pr, tk, art, btn, galerie){
   var inp=$("fotoInput"); if(!inp) return;
   inp.value="";
+  // 19.11.2026 (Ghețau): "Fă o poză" öffnet direkt die Kamera (capture), Galerie über eigenen Knopf
+  if(galerie) inp.removeAttribute("capture"); else inp.setAttribute("capture","environment");
   inp.onchange=function(){
     var f=inp.files&&inp.files[0]; if(!f) return;
     show("warn",t("tkUpload"));
@@ -489,13 +526,20 @@ function fotoAufnehmen(pr, tk, art, btn){
       c.getContext("2d").drawImage(img,0,0,c.width,c.height);
       URL.revokeObjectURL(url);
       var b64=c.toDataURL("image/jpeg",0.72);
-      tkSend(pr, tk, {was:"foto", art:art, b64:b64}, btn);
+      fotoSenden(pr, tk, {was:"foto", art:art, b64:b64});
     };
     img.onerror=function(){ URL.revokeObjectURL(url); show("err",t("eNet")); };
     img.src=url;
   };
   inp.click();
 }
+/* 19.11.2026: Foto sofort auf dem Handy speichern (Warteschlange) und im Hintergrund senden –
+   kein Warten bei schwachem Netz im Keller, Foto ist gleich als "wartet" sichtbar. */
+function fotoSenden(pr, tk, p){
+  p.action="ticket"; p.token=token; p.projekt=pr.id; p.ticket=tk.id;
+  tqPush(pr,tk,p).then(function(ok){ if(ok){ if(navigator.onLine!==false) show("warn",t("tkUpload")); tqFlush(); } });
+}
+function galBtn(pr, tk, art){ var g=el("button","linkbtn","🖼 "+t("tkGalerie")); g.onclick=function(){ fotoAufnehmen(pr,tk,art,g,true); }; return g; }
 var fEing={}; // getippte Angaben je Ticket|Feld, überleben Neuaufbau der Ansicht (03.11.2026)
 function tkNode(pr, tk){
   tk=tkEff(tk); // wartende Aktionen überlagern
@@ -526,11 +570,11 @@ function tkNode(pr, tk){
   var bp=el("button","prob",t("tkProblem")); bp.style.cssText="width:100%;margin-top:8px;padding:14px;border:0;border-radius:12px;font-size:18px;font-weight:700";
   bp.onclick=function(){
     var box=el("div","probbox");
-    var fb=el("button","cam",t("tkProblemFoto")); fb.onclick=function(){ fotoAufnehmen(pr,tk,"vorher",fb); };
+    var fb=el("button","cam",t("tkProblemFoto")); fb.onclick=function(){ fotoAufnehmen(pr,tk,"vorher",fb); }; var fbG=galBtn(pr,tk,"vorher");
     var txt=document.createElement("textarea"); txt.rows=3; txt.placeholder=t("tkGrundText");
     var go=el("button","prob",t("tkMelden"));
     go.onclick=function(){ var g=txt.value.trim(); if(!g) return; tkSend(pr,tk,{was:"status",status:"klaeren",grund:g},go); };
-    box.appendChild(fb); box.appendChild(txt); box.appendChild(go);
+    box.appendChild(fb); box.appendChild(fbG); box.appendChild(txt); box.appendChild(go);
     s1.appendChild(box); bp.disabled=true;
   };
   if(!done) s1.appendChild(bp);
@@ -538,7 +582,7 @@ function tkNode(pr, tk){
   var fo=tk.fotos||{};
   var s2=el("div","step"+(fo.vorher?" ok":"")); s2.appendChild(el("div","sh","2 · "+t("tkS2")+(fo.vorher?" ✓ "+fo.vorher:"")));
   var p2=picsNode(tk.bilder,"v"); if(p2) s2.appendChild(p2);
-  var b2=el("button","cam",fo.vorher?t("tkFotoMehr"):t("tkFoto")); b2.onclick=function(){fotoAufnehmen(pr,tk,"vorher",b2)}; s2.appendChild(b2); k.appendChild(s2);
+  var b2=el("button","cam",fo.vorher?t("tkFotoMehr"):t("tkFoto")); b2.onclick=function(){fotoAufnehmen(pr,tk,"vorher",b2)}; s2.appendChild(b2); s2.appendChild(galBtn(pr,tk,"vorher")); k.appendChild(s2);
   // Schritt 3: Arbeiten (offene Punkte)
   var offenP=(tk.punkte||[]).filter(function(p){return p.s===0 && !/^info:/i.test(p.n)});
   var s3=el("div","step"+(offenP.length?"":" ok")); s3.appendChild(el("div","sh","3 · "+t("tkS3")+(offenP.length?"":" ✓")));
@@ -583,7 +627,7 @@ if(offenF.some(function(f){return /breite|höhe|hoehe/i.test(f.name)})) s4.appen
   // Schritt 5: Foto nachher
   var s5=el("div","step"+(fo.nachher?" ok":"")); s5.appendChild(el("div","sh","5 · "+t("tkS5")+(fo.nachher?" ✓ "+fo.nachher:"")));
   var p5=picsNode(tk.bilder,"n"); if(p5) s5.appendChild(p5);
-  var b5=el("button","cam",fo.nachher?t("tkFotoMehr"):t("tkFoto")); b5.onclick=function(){fotoAufnehmen(pr,tk,"nachher",b5)}; s5.appendChild(b5); k.appendChild(s5);
+  var b5=el("button","cam",fo.nachher?t("tkFotoMehr"):t("tkFoto")); b5.onclick=function(){fotoAufnehmen(pr,tk,"nachher",b5)}; s5.appendChild(b5); s5.appendChild(galBtn(pr,tk,"nachher")); k.appendChild(s5);
   // Schritt 6: Fertig / Problem (nicht bei Nachbearbeitung)
 if(done) return k;
   var s6=el("div","step"); s6.appendChild(el("div","sh","6 · "+t("tkS6")));
