@@ -3,8 +3,8 @@
    2. Hintergrund-Senden: wartende Stempel und Ticket-Eingaben werden gesendet,
       sobald wieder Netz da ist – auch wenn die App geschlossen ist (Background Sync).
    Doppelschutz: jede Eingabe hat eine feste ID (cid), der Server erkennt Wiederholungen. */
-var CACHE = "faz-v30";
-var HUELLE = ["./", "index.html", "app.js?v=30", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+var CACHE = "faz-v31";
+var HUELLE = ["./", "index.html", "app.js?v=31", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(HUELLE); }).then(function () { return self.skipWaiting(); }));

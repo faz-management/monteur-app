@@ -3,7 +3,7 @@
    ENDPOINT: Web-App-URL des Google-Apps-Script (endet auf /exec).
    Wird die Seite direkt aus Apps Script ausgeliefert, wird der Wert automatisch gesetzt. */
 /* V28 (18.11.2026): Oberfläche liegt auf GitHub Pages (offlinefähig), Server bleibt Apps Script. */
-var APP_VERSION = "29";
+var APP_VERSION = "31";
 var EPS = {
   live: "https://script.google.com/macros/s/AKfycbyvvbt__AT77uIZXixBWaxYZk5A8xAdyJMF3qZcngFnpnOTZ5b0EOSP0CuSSRKXKMtE-g/exec",
   test: "https://script.google.com/macros/s/AKfycbxY7Otv8aduO8SyULy5SAcxsrWd5kuetX8wKVdYde4psC_k6OuF3TUP_S1YZRHZumWcSw/exec"
@@ -21,6 +21,7 @@ var T = {
       invalid:"Telefonul nu este activat. Vă rugăm contactați biroul.",
       pending:"în așteptare",
       tabAuf:"Montatori",aufTitle:"Alege montatorul",aufStamp:"Pontajul merge doar pe contul tău. Întâi înapoi la Montatori.",aufView:"Vizualizare: ",aufQueue:"Întâi se trimit datele în așteptare.",
+      pvBtn:"🗺 Plan cu toate trecerile",pvHint:"Apasă pe un punct ca să lucrezi la trecere.",pvOhne:"Fără pin pe plan: ",pvErr:"Planul nu s-a putut încărca (fără internet?).",pvZu:"Închide",
       tabStempel:"Pontaj",tabAzi:"Azi",tabSapt:"Săptămâna",pNone:"Nimic planificat",pLoad:"Se încarcă planul…",
       pOffline:"Fără internet – ultimul plan salvat",pStand:"Actualizat la ",pReload:"Actualizează",pTomorrow:"Mâine",pToday:"Azi",
       pWith:"Cu: ",pRes:"cu rezervă",pOpen:"tichete deschise",pNoProj:"Fără proiect Fieldwire pentru acest termen",
@@ -51,6 +52,7 @@ var T = {
       invalid:"Dieses Handy ist nicht freigeschaltet. Bitte im Büro melden.",
       pending:"wartet",
       tabAuf:"Monteure",aufTitle:"Monteur wählen",aufStamp:"Stempeln geht nur für dich selbst. Erst zurück zu Monteure.",aufView:"Ansicht: ",aufQueue:"Erst werden wartende Daten gesendet.",
+      pvBtn:"🗺 Plan mit allen Schotts",pvHint:"Auf einen Punkt tippen, um das Schott zu bearbeiten.",pvOhne:"Ohne Pin im Plan: ",pvErr:"Plan konnte nicht geladen werden (kein Internet?).",pvZu:"Schließen",
       tabStempel:"Stempeln",tabAzi:"Heute",tabSapt:"Woche",pNone:"Nichts geplant",pLoad:"Plan wird geladen…",
       pOffline:"Kein Internet – letzter gespeicherter Plan",pStand:"Stand ",pReload:"Aktualisieren",pTomorrow:"Morgen",pToday:"Heute",
       pWith:"Mit: ",pRes:"mit Vorbehalt",pOpen:"offene Tickets",pNoProj:"Kein Fieldwire-Projekt zu diesem Termin",
@@ -300,6 +302,7 @@ function evNode(ev,withTickets){
       var pn=el("div","pn",pr.name+" · "+pr.gesamt+" "+t("pOpen"));
       if(pr.uebertrag) pn.appendChild(el("span","res",t("pCarry")));
       p.appendChild(pn);
+      if(pvPlaene(pr).length){ var pb=el("button","planbtn",t("pvBtn")+" ("+pr.tickets.filter(function(x){return x.fpid&&pr.plaene[x.fpid]}).length+")"); pb.onclick=function(){ pvOpen(pr); }; p.appendChild(pb); }
       if(istPro7(pr)) p.appendChild(ordnerNode(pr)); else pr.tickets.forEach(function(tk){ p.appendChild(tkNode(pr,tk)); });
       // Neues Schott vor Ort gefunden (Anja, 27.10.2026): in Fieldwire auf dem Plan anlegen, hier die #-Nummer eingeben, danach gleicher Ablauf
       var nbtn=el("button","neu","+ "+t("tkNeu"));
@@ -378,6 +381,100 @@ function renderPlan(){
     S.appendChild(dn); });
   var st=(plan._offline?t("pOffline")+" · ":"")+t("pStand")+(plan.stand||"")+(tq.length?" · "+t("tkWarte")+tq.length:"");
   $("aziStand").textContent=st;$("saptStand").textContent=st;
+  if(pv&&pv.on) pvRender();
+}
+
+/* ===== Plan-Übersicht (Florin 23.11.2026) =====
+   Je Projekt ein Knopf: Planbild aus Fieldwire mit allen Schotts als Punkte. Tippen auf einen Punkt öffnet das Schott
+   unten im selben Fenster mit dem normalen geführten Ablauf (Foto, Haken, Felder, FERTIG). */
+var pv={on:false,pr:null,prId:null,fp:null,sel:null,z:1,key:""};
+function pvPlaene(pr){
+  var out=[], pl=(pr&&pr.plaene)||{};
+  Object.keys(pl).forEach(function(id){
+    var tks=(pr.tickets||[]).filter(function(x){return x.fpid===id});
+    if(tks.length&&pl[id].u&&pl[id].w&&pl[id].h) out.push({id:id,n:pl[id].n||"Plan",u:pl[id].u,w:pl[id].w,h:pl[id].h,tks:tks,eb:tks[0].ebNr||0});
+  });
+  out.sort(function(a,b){ return (a.eb-b.eb)||a.n.localeCompare(b.n); });
+  return out;
+}
+function pvProj(){
+  var hit=null, erst=null;
+  var tage=[plan&&plan.azi, plan&&plan.maine]; Object.keys(tagDetail||{}).forEach(function(k){ tage.push(tagDetail[k]); });
+  tage.forEach(function(tag){ if(!tag||!tag.termine) return; tag.termine.forEach(function(ev){ (ev.projekte||[]).forEach(function(pr){ if(pr===pv.pr) hit=pr; if(!erst&&pr.id===pv.prId) erst=pr; }); }); });
+  return hit||erst;
+}
+function pvOpen(pr){
+  pv.on=true; pv.pr=pr; pv.prId=pr.id; pv.sel=null; pv.z=1; pv.key="";
+  var fps=pvPlaene(pr); pv.fp=fps.length?fps[0].id:null;
+  try{ history.pushState({pv:1},""); }catch(e){}
+  pvRender();
+}
+function pvClose(vonZurueck){
+  if(!pv.on) return; pv.on=false; pv.key="";
+  var b=$("pv"); if(b){ b.className=""; b.innerHTML=""; }
+  if(!vonZurueck){ try{ if(history.state&&history.state.pv) history.back(); }catch(e){} }
+}
+window.addEventListener("popstate",function(){ if(pv.on) pvClose(true); });
+function pvFarbe(tk){ var s=tk._status==="fertig"?"Geschottet":tk.status; return s==="Geschottet"?"ge":(s==="In Bearbeitung"?"ib":(s==="Offen"?"of":"zu")); }
+function pvZoom(z,cx,cy){
+  var sc=$("pvS"), c=$("pvC"); if(!sc||!c) return;
+  z=Math.max(1,Math.min(8,z));
+  var w0=c.offsetWidth||1, h0=c.offsetHeight||1;
+  if(cx===undefined){ cx=sc.clientWidth/2; cy=sc.clientHeight/2; }
+  var fx=(sc.scrollLeft+cx)/w0, fy=(sc.scrollTop+cy)/h0;
+  pv.z=z; c.style.width=(z*100)+"%";
+  sc.scrollLeft=fx*c.offsetWidth-cx; sc.scrollTop=fy*c.offsetHeight-cy;
+}
+function pvRender(){
+  var box=$("pv"); if(!box) return;
+  var pr=pvProj(); if(!pr){ pvClose(); return; }
+  pv.pr=pr;
+  var fps=pvPlaene(pr); if(!fps.length){ pvClose(); return; }
+  var cur=fps.filter(function(f){return f.id===pv.fp})[0]||fps[0]; pv.fp=cur.id;
+  var key=pr.id+"|"+cur.id+"|"+lang;
+  if(pv.key!==key){
+    pv.key=key; pv.z=1; box.innerHTML=""; box.className="on";
+    var h=el("div","pvh"); h.appendChild(el("div","ti",pr.name));
+    var zm=el("button","","−"); zm.onclick=function(){ pvZoom(pv.z/1.5); }; h.appendChild(zm);
+    var zp=el("button","","+"); zp.onclick=function(){ pvZoom(pv.z*1.5); }; h.appendChild(zp);
+    var x=el("button","","✕ "+t("pvZu")); x.onclick=function(){ pvClose(); }; h.appendChild(x);
+    box.appendChild(h);
+    if(fps.length>1){ var tb=el("div","pvt"); fps.forEach(function(f){ var b=el("button",f.id===cur.id?"on":"",f.n+" ("+f.tks.length+")"); b.onclick=function(){ pv.fp=f.id; pv.sel=null; pvRender(); }; tb.appendChild(b); }); box.appendChild(tb); }
+    else box.appendChild(el("div","pvn",cur.n));
+    var sc=el("div","pvs"); sc.id="pvS"; var c=el("div","pvc"); c.id="pvC";
+    var img=document.createElement("img"); img.alt=""; img.src=cur.u;
+    img.onerror=function(){ var m=$("pvMsg"); if(m){ m.className="miss"; m.textContent=t("pvErr"); } };
+    c.appendChild(img); var pins=el("div",""); pins.id="pvP"; c.appendChild(pins); sc.appendChild(c); box.appendChild(sc);
+    // Zwei-Finger-Zoom
+    var d0=0,z0=1;
+    function dist(e){ var a=e.touches[0],b=e.touches[1]; return Math.sqrt(Math.pow(a.clientX-b.clientX,2)+Math.pow(a.clientY-b.clientY,2)); }
+    sc.addEventListener("touchstart",function(e){ if(e.touches.length===2){ d0=dist(e); z0=pv.z; } },{passive:true});
+    sc.addEventListener("touchmove",function(e){ if(e.touches.length===2&&d0){ e.preventDefault(); var r=sc.getBoundingClientRect(); pvZoom(z0*dist(e)/d0,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top); } },{passive:false});
+    sc.addEventListener("touchend",function(e){ if(e.touches.length<2) d0=0; },{passive:true});
+    var k=el("div","pvk"); k.id="pvK"; box.appendChild(k);
+  }
+  // Punkte
+  var P=$("pvP"); P.innerHTML="";
+  cur.tks.forEach(function(tk0){
+    var tk=tkEff(tk0);
+    var b=el("button","pin "+pvFarbe(tk)+(pv.sel===tk.id?" sel":""),(tk.status==="Geschottet"||tk._status==="fertig"?"✓":"")+tk.nr);
+    b.style.left=(tk.px/cur.w*100)+"%"; b.style.top=(tk.py/cur.h*100)+"%";
+    b.onclick=function(){ pv.sel=(pv.sel===tk.id?null:tk.id); if(pv.sel) tkAuf[tk.id]=true; pvRender(); };
+    P.appendChild(b);
+  });
+  // Unten: gewähltes Schott mit dem normalen Ablauf
+  var K=$("pvK"); var top=K.scrollTop; K.innerHTML="";
+  var selTk=pv.sel?(pr.tickets||[]).filter(function(x){return x.id===pv.sel})[0]:null;
+  if(selTk){
+    var zu=el("button","pvx","▼"); zu.onclick=function(){ pv.sel=null; pvRender(); }; K.appendChild(zu);
+    K.appendChild(tkNode(pr,selTk)); K.className="pvk auf"; K.scrollTop=top;
+  } else {
+    K.className="pvk";
+    var m=el("div","l",t("pvHint")); m.id="pvMsg"; K.appendChild(m);
+    var leg=el("div","pvl"); [["zu","Zu Schotten"],["ib","In Bearbeitung"],["of","Offen"],["ge","Geschottet"]].forEach(function(g){ var n=cur.tks.filter(function(x){return pvFarbe(tkEff(x))===g[0]}).length; if(!n) return; var s=el("span","pin "+g[0],String(n)); s.style.position="static"; s.style.transform="none"; leg.appendChild(s); leg.appendChild(el("span","",g[1])); }); K.appendChild(leg);
+    var ohne=(pr.tickets||[]).filter(function(x){return !x.fpid||!pr.plaene[x.fpid]});
+    if(ohne.length) K.appendChild(el("div","l",t("pvOhne")+ohne.map(function(x){return "#"+x.nr}).join(", ")));
+  }
 }
 function loadPlan(frisch){
   if(planBusy||!token||!$("aziBox")) return Promise.resolve();
