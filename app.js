@@ -3,7 +3,15 @@
    ENDPOINT: Web-App-URL des Google-Apps-Script (endet auf /exec).
    Wird die Seite direkt aus Apps Script ausgeliefert, wird der Wert automatisch gesetzt. */
 /* V28 (18.11.2026): Oberfläche liegt auf GitHub Pages (offlinefähig), Server bleibt Apps Script. */
-var APP_VERSION = "32";
+var APP_VERSION = "33";
+/* V33 (25.11.2026): Geldbeträge (€/EUR/Euro) aus Büro-Texten ausblenden – Monteur sah „KV an Sabina 23.11. (2.520,39 €)“ in der Termin-Notiz. */
+function ohnePreis(s){
+  if(!s) return s;
+  return String(s)
+    .replace(/\(?\s*(?:€|EUR|Euro)\s*\d[\d.,' ]*\d?\s*\)?/gi," ")
+    .replace(/\(?\s*\d[\d.,' ]*\s*(?:€|EUR\b|Euro\b)\s*\)?/gi," ")
+    .replace(/\(\s*\)/g,"").replace(/\s+([.,;:])/g,"$1").replace(/([^.])\.\.(?!\.)/g,"$1.").replace(/\s{2,}/g," ").trim();
+}
 var EPS = {
   live: "https://script.google.com/macros/s/AKfycbyvvbt__AT77uIZXixBWaxYZk5A8xAdyJMF3qZcngFnpnOTZ5b0EOSP0CuSSRKXKMtE-g/exec",
   test: "https://script.google.com/macros/s/AKfycbxY7Otv8aduO8SyULy5SAcxsrWd5kuetX8wKVdYde4psC_k6OuF3TUP_S1YZRHZumWcSw/exec"
@@ -293,7 +301,7 @@ function evNode(ev,withTickets){
   var andere=(ev.leute||[]).filter(function(n){return n.toLowerCase().indexOf(me)<0});
   if(andere.length) d.appendChild(el("div","l",t("pWith")+andere.join(", ")));
   if(ev.ort) d.appendChild(el("div","l",ev.ort));
-  if(ev.hinweis) d.appendChild(el("div","h",ev.hinweis));
+  if(ev.hinweis) d.appendChild(el("div","h",ohnePreis(ev.hinweis)));
   // Material-Erinnerung (Anja, 27.10.2026): nur Anzeige mit Datum, kein Haken
   if(ev.material&&ev.material.length){ var mb=el("div","miss"); mb.appendChild(el("div","","📦 "+t("tkMat")+(ev.materialDatum?fmtDay(ev.materialDatum):"")+":")); ev.material.forEach(function(x){ mb.appendChild(el("div","","• "+(lang==="de"?(x.de||x.ro):(x.ro||x.de)))); }); d.appendChild(mb); }
   if(withTickets){
@@ -658,7 +666,7 @@ function tkNode(pr, tk){
   var info=tk.info||{};
   var meta=[tk.eb?t("pLevel")+tk.eb:"", info.raum?t("pRoom")+info.raum:"", info.einbau, info.masse?info.masse+" mm":"", info.hoehe?info.hoehe+" m":"", info.art, tk.status].filter(Boolean).join(" · ");
   if(meta) k.appendChild(el("div","tm",meta));
-  if(info.notiz) k.appendChild(el("div","h","ℹ "+info.notiz));
+  if(info.notiz) k.appendChild(el("div","h","ℹ "+ohnePreis(info.notiz)));
   if(info.bsk) k.appendChild(el("div","h","BSK: "+info.bsk));
   var done=tk.status==="Geschottet";
   // Schritt 1: hinfinden
@@ -696,7 +704,7 @@ function tkNode(pr, tk){
     var row=el("label","chk"+(p.s===1?" done":"")+(p._p?" pend2":""));
     var cb=document.createElement("input"); cb.type="checkbox"; cb.checked=p.s===1; cb.disabled=/^info:/i.test(p.n);
     cb.onchange=function(){ tkSend(pr,tk,{was:"haken",punkt:p.id,wert:cb.checked}); };
-    row.appendChild(cb); row.appendChild(el("span","",p.n)); s3.appendChild(row);
+    row.appendChild(cb); row.appendChild(el("span","",ohnePreis(p.n))); s3.appendChild(row);
   });
   var np=el("div","fi"); var ni=document.createElement("input"); ni.type="text"; ni.placeholder=t("tkPunktNeu"); ni.maxLength=160;
   var nb=el("button","sv","+"); nb.title=t("tkPunktAdd"); nb.onclick=function(){ var v=ni.value.trim(); if(v) tkSend(pr,tk,{was:"punkt",text:v},nb); };
