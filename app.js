@@ -3,7 +3,7 @@
    ENDPOINT: Web-App-URL des Google-Apps-Script (endet auf /exec).
    Wird die Seite direkt aus Apps Script ausgeliefert, wird der Wert automatisch gesetzt. */
 /* V28 (18.11.2026): Oberfläche liegt auf GitHub Pages (offlinefähig), Server bleibt Apps Script. */
-var APP_VERSION = "31";
+var APP_VERSION = "32";
 var EPS = {
   live: "https://script.google.com/macros/s/AKfycbyvvbt__AT77uIZXixBWaxYZk5A8xAdyJMF3qZcngFnpnOTZ5b0EOSP0CuSSRKXKMtE-g/exec",
   test: "https://script.google.com/macros/s/AKfycbxY7Otv8aduO8SyULy5SAcxsrWd5kuetX8wKVdYde4psC_k6OuF3TUP_S1YZRHZumWcSw/exec"
@@ -162,7 +162,8 @@ function show(kind,text){var m=$("msg");m.className="msg "+kind;m.textContent=te
 
 // Übertragung: innerhalb von Apps Script über google.script.run, sonst per fetch
 function send(payload){
-  if(ALS) payload.als=ALS;
+  // V32: eigene Stempel nie im Namen des gewählten Monteurs; wartende Eingaben behalten das "als" vom Zeitpunkt des Eingebens
+  if(ALS && payload.action!=="stamp" && payload.als===undefined) payload.als=ALS;
   if(window.google && google.script && google.script.run){
     return new Promise(function(res,rej){google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(payload)});
   }
@@ -513,7 +514,7 @@ function tqDel(id){ return idb().then(function(db){ return new Promise(function(
   var tx=db.transaction("q","readwrite"); tx.objectStore("q").delete(id); tx.oncomplete=res; tx.onerror=res; tx.onabort=res; }); }).catch(function(){}); }
 function tqPush(pr,tk,payload){
   if(!payload.cid) payload.cid="t"+uid();
-  if(ALS && !payload.als) payload.als=ALS;
+  if(payload.als===undefined) payload.als=ALS||""; // "" = eigene Ansicht, auch wenn später ein anderer Monteur gewählt wird
   var item={id:payload.cid,ts:Date.now(),pr:pr.id,tk:tk.id,p:payload};
   return tqSave(item).then(function(){return true}).catch(function(){return false}).then(function(ok){
     if(!ok){ show("err",t("tkVoll")); return false; }
@@ -522,20 +523,27 @@ function tqPush(pr,tk,payload){
 }
 function tqFuer(tkId){ return tq.filter(function(q){return q.tk===tkId}); }
 var tqBusy=false;
+function tkLaeuft(){ return Object.keys(tkBusy).some(function(k){return tkBusy[k]}); }
 function tqFlush(){
-  if(tqBusy||!tq.length||!token) return Promise.resolve();
-  tqBusy=true;
+  if(tqBusy||!tq.length||!token||tkLaeuft()) return Promise.resolve();
   var item=tq[0];
+  if(item.next&&item.next>Date.now()) return Promise.resolve(); // nach Serverfehler: Wartezeit abwarten (schont das Google-Tageskontingent)
+  tqBusy=true;
   return send(item.p).then(function(r){
     tqBusy=false;
     if(!r) return;
     if(r.error==="busy"||r.error==="token"){ if(r.error==="token") show("err",t("invalid")); return; } // später erneut
-    tq=tq.filter(function(q){return q.id!==item.id}); tqDel(item.id);
-    if(r.ok&&r.ticket) tkUpdate(item.tk,r.ticket);
-    else if(r.ok) renderPlan();
-    else if(r.error==="unvollstaendig"){ if(r.ticket) tkUpdate(item.tk,r.ticket); show("err",t("tkFehlt")+" "+(r.fehlt||[]).join(", ")); }
-    else { show("err",t("eNet")+(r.msg?" ("+r.msg+")":"")); renderPlan(); }
-    return tqFlush();
+    if(r.ok||r.error==="unvollstaendig"){
+      tq=tq.filter(function(q){return q.id!==item.id}); tqDel(item.id);
+      if(r.ok&&r.ticket) tkUpdate(item.tk,r.ticket);
+      else if(r.ok) renderPlan();
+      else { if(r.ticket) tkUpdate(item.tk,r.ticket); show("err",t("tkFehlt")+" "+(r.fehlt||[]).join(", ")); }
+      return tqFlush();
+    }
+    // V32: sonstiger Serverfehler -> Eingabe (z. B. Foto) NICHT wegwerfen, später erneut (30 s, 1, 2, 4 … max. 30 min)
+    item.n=(item.n||0)+1; item.next=Date.now()+Math.min(30000*Math.pow(2,item.n-1),1800000); item.fehler=r.msg||r.error||"";
+    tqSave(item).catch(function(){});
+    show("err",t("eNet")+(r.msg?" ("+r.msg+")":"")); renderPlan();
   }).catch(function(){ tqBusy=false; });
 }
 setInterval(tqFlush,30000);
@@ -592,14 +600,13 @@ function tkUpdate(id, neu){
   ls("faz_plan",JSON.stringify(plan)); renderPlan();
 }
 function tkSend(pr, tk, payload, btn){
-  if(tkBusy[tk.id]) return Promise.resolve(null);
   payload.action="ticket"; payload.token=token; payload.projekt=pr.id; payload.ticket=tk.id;
   if(!payload.cid) payload.cid="t"+uid(); // feste ID je Eingabe: Server erkennt Wiederholungen (keine doppelten Fotos)
-  // Ohne Netz, oder solange noch etwas wartet (Reihenfolge!), in die Warteschlange
-  if(navigator.onLine===false || tq.length) return tqPush(pr,tk,payload).then(function(){return null});
+  // Ohne Netz, solange noch etwas wartet (Reihenfolge!) oder eine Eingabe gerade läuft (V32: vorher verworfen), in die Warteschlange
+  if(navigator.onLine===false || tq.length || tkLaeuft()) return tqPush(pr,tk,payload).then(function(){return null});
   tkBusy[tk.id]=true; if(btn) btn.disabled=true;
   return send(payload).then(function(r){
-    tkBusy[tk.id]=false; if(btn) btn.disabled=false;
+    tkBusy[tk.id]=false; if(btn) btn.disabled=false; setTimeout(tqFlush,0); // Wartendes danach der Reihe nach senden
     if(r&&r.ok&&r.ticket){ tkUpdate(tk.id, r.ticket); show("ok",t("saved")); }
     else if(r&&r.ok){ show("ok",t("saved")); }
     else if(r&&r.error==="unvollstaendig"){ if(r.ticket) tkUpdate(tk.id,r.ticket); show("err",t("tkFehlt")+" "+(r.fehlt||[]).join(", ")); }

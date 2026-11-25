@@ -45,6 +45,8 @@
   .msg.ok{display:block;background:#e3f3e8;color:#14532d}
   .msg.warn{display:block;background:#fff4dc;color:#6b4200}
   .msg.err{display:block;background:#fde6e6;color:#7f1d1d}
+  /* V32: Meldung schwebt über allen Reitern + Plan-Übersicht (vorher nur im Reiter Pontaj sichtbar) */
+  #msg{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;margin:0;box-shadow:0 4px 14px rgba(0,0,0,.25)}
   .today{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
   .today h2{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:600}
   .today ul{list-style:none;margin:0;padding:0}
@@ -191,7 +193,6 @@
     <button class="btn p" data-typ="Pause Beginn"><span data-i="pause"></span><small data-i="pauseSub"></small></button>
     <button class="btn w" data-typ="Pause Ende"><span data-i="weiter"></span><small data-i="weiterSub"></small></button>
   </div>
-  <div class="msg" id="msg"></div>
   <div class="today"><h2 data-i="heute"></h2><ul id="list"></ul></div>
   <div class="foot" id="foot"></div>
 </div>
@@ -213,6 +214,7 @@
   <div id="aufBox"></div>
 </div>
 </main>
+<div class="msg" id="msg" role="status"></div>
 <input type="file" id="fotoInput" accept="image/*" style="display:none">
 <nav class="tabs" id="tabs">
   <button data-p="stempel" class="on"><span class="ic">&#9201;</span><span data-i="tabStempel"></span></button>
@@ -237,7 +239,7 @@
 <div id="pv"></div>
 <div class="overlay" id="ov"><div class="dlg"><p id="ovText"></p><div class="row"><button id="ovNo"></button><button class="yes" id="ovYes"></button></div></div></div>
 
-<script src="app.js?v=31"></script>
+<script src="app.js?v=32"></script>
 
 </body>
 </html>
