@@ -3,12 +3,18 @@
    ENDPOINT: Web-App-URL des Google-Apps-Script (endet auf /exec).
    Wird die Seite direkt aus Apps Script ausgeliefert, wird der Wert automatisch gesetzt. */
 /* V28 (18.11.2026): Oberfläche liegt auf GitHub Pages (offlinefähig), Server bleibt Apps Script. */
-var APP_VERSION = "33";
+var APP_VERSION = "34";
+/* V34 (26.11.2026, Meldungen von Victor, Ghețau, Alex per WhatsApp):
+   - Eingaben gehen nicht mehr verloren und hängen nicht mehr hinter Fotos fest: Haken/Felder/Material werden vor den Fotos gesendet,
+     ein dauerhaft abgelehnter Eintrag blockiert die Warteschlange nicht mehr, Serverfehler heißen nicht mehr „kein Internet“.
+   - Material wird bei FERTIG immer abgefragt (auch ohne Netz / mit wartenden Fotos) und kann nach FERTIG nachgetragen werden.
+   - Plan: erst kleines Bild, „Nochmal laden“, Punkte auch ohne Bild richtig, Zoom bis 40-fach, Start auf den Punkten, Nummernliste.
+   - Projekte ohne Maßfelder (Pro7, Securetec): Hinweis, wohin die Maße gehören. App-Version im Fuß und an den Server. */
 /* V33 (25.11.2026): Geldbeträge (€/EUR/Euro) aus Büro-Texten ausblenden – Monteur sah „KV an Sabina 23.11. (2.520,39 €)“ in der Termin-Notiz. */
 function ohnePreis(s){
   if(!s) return s;
   return String(s)
-    .replace(/\(?\s*(?:€|EUR|Euro)\s*\d[\d.,' ]*\d?\s*\)?/gi," ")
+    .replace(/\(?\s*(?:€|\bEUR\b|\bEuro\b)\s*\d[\d.,' ]*\d?\s*\)?/gi," ") // V34: Wortgrenzen – vorher wurde aus „Monteur 2 fehlt“ „Mont fehlt“ („eur 2“ galt als Betrag)
     .replace(/\(?\s*\d[\d.,' ]*\s*(?:€|EUR\b|Euro\b)\s*\)?/gi," ")
     .replace(/\(\s*\)/g,"").replace(/\s+([.,;:])/g,"$1").replace(/([^.])\.\.(?!\.)/g,"$1.").replace(/\s{2,}/g," ").trim();
 }
@@ -29,7 +35,14 @@ var T = {
       invalid:"Telefonul nu este activat. Vă rugăm contactați biroul.",
       pending:"în așteptare",
       tabAuf:"Montatori",aufTitle:"Alege montatorul",aufStamp:"Pontajul merge doar pe contul tău. Întâi înapoi la Montatori.",aufView:"Vizualizare: ",aufQueue:"Întâi se trimit datele în așteptare.",
-      pvBtn:"🗺 Plan cu toate trecerile",pvHint:"Apasă pe un punct ca să lucrezi la trecere.",pvOhne:"Fără pin pe plan: ",pvErr:"Planul nu s-a putut încărca (fără internet?).",pvZu:"Închide",
+      pvBtn:"🗺 Plan cu toate trecerile",pvHint:"Apasă pe un punct ca să lucrezi la trecere.",pvOhne:"Fără pin pe plan: ",pvErr:"Planul nu s-a încărcat (internet slab?). Punctele funcționează oricum.",pAlt:"Plan vechi din ",pAltHin:"Apasă „Actualizează” (cu internet).",pvZu:"Închide",pvRetry:"Încarcă din nou planul",pvLade:"Se încarcă planul…",pvListe:"Toate trecerile de pe acest plan:",
+      eSrv:"Serverul încă nu a salvat. Datele rămân pe telefon și se trimit din nou automat – nu le scrie a doua oară.",eZahl:"Aici se scriu doar cifre: ",eFest:"NU s-a salvat: ",eFest2:" Scrie din nou sau trimite-i Claudiei un mesaj.",eWeg:"Am înțeles",
+      eFoto:"Poza nu a putut fi citită. Te rog, fă poza încă o dată.",eNochmal:"Serverul nu a răspuns corect. Apasă din nou peste un minut.",
+      tkHaengt:"Date care nu se pot trimite de mult timp: ",tkVerwerfen:"Șterge din așteptare",tkVerwerfenFrage:"Sigur ștergi aceste date din așteptare? Nu se mai trimit la birou. Anunț-o pe Claudia.",
+      eMassZahl:"Doar cifre, în milimetri (ex. 150): ",eMassNull:"0 nu este o dimensiune. Scrie dimensiunea în mm: ",fMassKlein:" mm? Dimensiunile se scriu în milimetri (1 cm = 10 mm). Este corect?",fMassGross:" mm, adică peste 3 metri. Este corect?",
+      eHoeheZahl:"Doar cifre, în metri (ex. 3 sau 2,5): ",fHoeheNull:"Înălțimea de montaj 0 m este corectă doar la podea. Trecerea este în podea?",fHoeheGross:" m înălțime de montaj? Înălțimea se scrie în metri (ex. 3). Este corect?",
+      tkMatNach:"Adaugă materialul folosit",tkMatSpeichern:"Salvează materialul",tkMatOhne:"Ce material ai folosit și cât? (ex. folie 5 m², CP 673 2 kg)",
+      tkMassHinweis:"Dimensiunile: scrie-le mai sus, la „Ce ai mai făcut / observații” (ex. 1x RD 0,32x0,18), apoi apasă +.",tkWarteHin:"Salvat pe telefon. Se trimite automat, pe rând. Nu trebuie scris din nou.",
       tabStempel:"Pontaj",tabAzi:"Azi",tabSapt:"Săptămâna",pNone:"Nimic planificat",pLoad:"Se încarcă planul…",
       pOffline:"Fără internet – ultimul plan salvat",pStand:"Actualizat la ",pReload:"Actualizează",pTomorrow:"Mâine",pToday:"Azi",
       pWith:"Cu: ",pRes:"cu rezervă",pOpen:"tichete deschise",pNoProj:"Fără proiect Fieldwire pentru acest termen",
@@ -60,7 +73,14 @@ var T = {
       invalid:"Dieses Handy ist nicht freigeschaltet. Bitte im Büro melden.",
       pending:"wartet",
       tabAuf:"Monteure",aufTitle:"Monteur wählen",aufStamp:"Stempeln geht nur für dich selbst. Erst zurück zu Monteure.",aufView:"Ansicht: ",aufQueue:"Erst werden wartende Daten gesendet.",
-      pvBtn:"🗺 Plan mit allen Schotts",pvHint:"Auf einen Punkt tippen, um das Schott zu bearbeiten.",pvOhne:"Ohne Pin im Plan: ",pvErr:"Plan konnte nicht geladen werden (kein Internet?).",pvZu:"Schließen",
+      pvBtn:"🗺 Plan mit allen Schotts",pvHint:"Auf einen Punkt tippen, um das Schott zu bearbeiten.",pvOhne:"Ohne Pin im Plan: ",pvErr:"Plan nicht geladen (schwaches Internet?). Die Punkte gehen trotzdem.",pAlt:"Alter Plan vom ",pAltHin:"Bitte „Aktualisieren“ tippen (mit Internet).",pvZu:"Schließen",pvRetry:"Plan nochmal laden",pvLade:"Plan wird geladen…",pvListe:"Alle Schotts auf diesem Plan:",
+      eSrv:"Der Server hat noch nicht gespeichert. Die Eingabe bleibt im Handy und wird automatisch nochmal gesendet – nicht doppelt eintragen.",eZahl:"Hier gehen nur Zahlen: ",eFest:"NICHT gespeichert: ",eFest2:" Bitte nochmal eintragen oder Claudia schreiben.",eWeg:"Verstanden",
+      eFoto:"Das Foto konnte nicht gelesen werden. Bitte das Foto noch einmal machen.",eNochmal:"Der Server hat nicht richtig geantwortet. Bitte in einer Minute noch einmal tippen.",
+      tkHaengt:"Gehen seit Langem nicht durch: ",tkVerwerfen:"Aus der Warteliste löschen",tkVerwerfenFrage:"Diese Einträge wirklich aus der Warteliste löschen? Sie gehen dann nicht ans Büro. Bitte Claudia Bescheid geben.",
+      eMassZahl:"Nur Zahlen, in Millimetern (z. B. 150): ",eMassNull:"0 ist kein Maß. Bitte die Größe in mm eintragen: ",fMassKlein:" mm? Maße stehen in Millimetern (1 cm = 10 mm). Stimmt das?",fMassGross:" mm, das sind über 3 Meter. Stimmt das?",
+      eHoeheZahl:"Nur Zahlen, in Metern (z. B. 3 oder 2,5): ",fHoeheNull:"Montagehöhe 0 m stimmt nur im Boden. Ist das Schott im Boden?",fHoeheGross:" m Montagehöhe? Die Angabe ist in Metern (z. B. 3). Stimmt das?",
+      tkMatNach:"Verbrauchtes Material nachtragen",tkMatSpeichern:"Material speichern",tkMatOhne:"Welches Material und wie viel? (z. B. Folie 5 m², CP 673 2 kg)",
+      tkMassHinweis:"Maße: oben bei „Was noch gemacht wurde / Bemerkung“ eintragen (z. B. 1x RD 0,32x0,18) und + tippen.",tkWarteHin:"Im Handy gespeichert. Wird automatisch der Reihe nach gesendet. Nicht nochmal eintragen.",
       tabStempel:"Stempeln",tabAzi:"Heute",tabSapt:"Woche",pNone:"Nichts geplant",pLoad:"Plan wird geladen…",
       pOffline:"Kein Internet – letzter gespeicherter Plan",pStand:"Stand ",pReload:"Aktualisieren",pTomorrow:"Morgen",pToday:"Heute",
       pWith:"Mit: ",pRes:"mit Vorbehalt",pOpen:"offene Tickets",pNoProj:"Kein Fieldwire-Projekt zu diesem Termin",
@@ -159,6 +179,8 @@ function render(){
     li.appendChild(a); li.appendChild(b); ul.appendChild(li);
   });
   $("foot").textContent = info && info.gps===false ? t("footNoGps") : t("foot");
+  // V34: Version sichtbar, damit ein Bildschirmfoto zeigt, mit welchem Stand das Handy arbeitet (Florin 26.11.2026)
+  $("foot").appendChild(document.createElement("br")); $("foot").appendChild(el("span","","App V"+APP_VERSION));
   if(info && info.onb===false) return;
   var cb=document.createElement("button"); cb.className="linkbtn"; cb.textContent=t("change"); cb.onclick=function(){showSetup(true)};
   $("foot").appendChild(document.createElement("br")); $("foot").appendChild(cb);
@@ -166,19 +188,47 @@ function render(){
 setInterval(function(){var d=new Date();$("clock").textContent=pad(d.getHours())+":"+pad(d.getMinutes())},1000);
 (function(){var d=new Date();$("clock").textContent=pad(d.getHours())+":"+pad(d.getMinutes())})();
 
-function show(kind,text){var m=$("msg");m.className="msg "+kind;m.textContent=text;clearTimeout(show._t);show._t=setTimeout(function(){m.className="msg"},6000)}
+function show(kind,text){var m=$("msg");m.className="msg "+kind;m.textContent=text;clearTimeout(show._t);show._t=setTimeout(function(){m.className="msg"},kind==="err"?14000:6000)} // V34: Fehler länger lesbar
+
+/* V34: Antworten des Servers richtig einordnen. Vorher hieß jeder Fehler „Fără conexiune la internet“, und in der Warteschlange
+   wurde auch ein Eintrag, den der Server nie annehmen kann (z. B. Text in einem Zahlenfeld), endlos wiederholt – alles dahinter blieb liegen. */
+// „format“ und „server“ stehen bewusst NICHT hier: Server bis V35 meldete jede Ausnahme (z. B. Zeitüberschreitung der Tabelle) als „format“ → vorübergehend.
+var FEST={zahl:1,"null":1,daten:1,aktion:1,nummer:1,nicht_gefunden:1,status_fehlt:1,als:1,aufsicht:1};
+function istFest(r){
+  if(!r||r.ok) return false;
+  if(FEST[r.error]) return true;
+  if(r.error==="fieldwire"){ var m=String(r.msg||"").match(/(\d{3})/), c=m?Number(m[1]):0; return c>=400&&c<500&&c!==401&&c!==408&&c!==409&&c!==423&&c!==429; }
+  return false;
+}
+function fehlerText(r){
+  if(r&&r.error==="zahl") return t("eZahl")+(r.msg||"");
+  if(r&&r.error==="null") return t("eMassNull")+(r.msg||"");
+  if(istFest(r)) return t("eFest")+(r.msg||r.error||"")+"."+t("eFest2");
+  return t("eSrv")+(r&&(r.msg||r.error)?" ("+(r.msg||r.error)+")":"");
+}
+/* Dauerhafte Fehler bleiben am Ticket stehen, bis der Monteur sie wegtippt (die kurze Meldung oben verschwindet nach Sekunden). */
+var tkErr={}; try{ tkErr=JSON.parse(ls("faz_tkerr")||"{}")||{}; }catch(e){ tkErr={}; }
+function tkErrSet(id,text){
+  if(!text) delete tkErr[id];
+  else if(tkErr[id]&&tkErr[id].indexOf(text)<0) tkErr[id]=(tkErr[id]+" · "+text).slice(-600); // mehrere Fehler am selben Schott nacheinander zeigen
+  else tkErr[id]=text;
+  ls("faz_tkerr",JSON.stringify(tkErr));
+}
 
 // Übertragung: innerhalb von Apps Script über google.script.run, sonst per fetch
 function send(payload){
   // V32: eigene Stempel nie im Namen des gewählten Monteurs; wartende Eingaben behalten das "als" vom Zeitpunkt des Eingebens
   if(ALS && payload.action!=="stamp" && payload.als===undefined) payload.als=ALS;
+  payload.v=APP_VERSION; // V34: Server hält je Handy fest, welche App-Version zuletzt geöffnet wurde (Blatt Geräte)
   if(window.google && google.script && google.script.run){
     return new Promise(function(res,rej){google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(payload)});
   }
   var ctl = window.AbortController ? new AbortController() : null;
   var tm = setTimeout(function(){ if(ctl) ctl.abort(); }, payload.was==="foto" ? 90000 : 45000);
   return fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),redirect:"follow",signal:ctl?ctl.signal:undefined})
-    .then(function(r){ clearTimeout(tm); if(!r.ok) throw new Error("http "+r.status); return r.json(); },
+    .then(function(r){ if(!r.ok){ clearTimeout(tm); throw new Error("http "+r.status); }
+            // V34: Zeitlimit gilt bis zum Ende der Antwort (vorher nur bis zum Antwortkopf – hing der Rest, blieb das Senden stehen)
+            return r.json().then(function(j){ clearTimeout(tm); return j; }, function(e){ clearTimeout(tm); throw e; }); },
           function(err){ clearTimeout(tm); throw err; });
 }
 
@@ -201,10 +251,18 @@ window.addEventListener("online",flush);
 function getPos(){
   return new Promise(function(res){
     if(!navigator.geolocation||(info&&info.gps===false)) return res(null);
-    var done=false;
-    navigator.geolocation.getCurrentPosition(function(p){if(done)return;done=true;res({lat:p.coords.latitude,lon:p.coords.longitude,acc:Math.round(p.coords.accuracy)})},
-      function(){if(done)return;done=true;res(null)},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
-    setTimeout(function(){if(!done){done=true;res(null)}},17000);
+    // V34: nicht mehr die erste (oft grobe, „2000 m“) Ortung nehmen, sondern bis zu 8 s die beste abwarten; ab 100 m Genauigkeit sofort fertig.
+    // Anlass: Ghețau 24./25.11.2026 – alle Stempel mit „2000 m“ oder ohne GPS. Ohne jede Ortung endet das Warten jetzt nach 8 s (vorher 17 s).
+    var done=false, best=null, wid=null;
+    var ende=function(){ if(done) return; done=true; try{ if(wid!==null) navigator.geolocation.clearWatch(wid); }catch(e){} res(best); };
+    try{
+      wid=navigator.geolocation.watchPosition(function(p){
+        var q={lat:p.coords.latitude,lon:p.coords.longitude,acc:Math.round(p.coords.accuracy)};
+        if(!best||q.acc<best.acc) best=q;
+        if(best.acc<=100) ende();
+      }, function(err){ if(err&&err.code===1) ende(); }, {enableHighAccuracy:true,timeout:8000,maximumAge:0}); // Ortung am Handy verweigert: nicht 8 s warten
+    }catch(e){}
+    setTimeout(ende,8000);
   });
 }
 
@@ -234,7 +292,7 @@ document.querySelectorAll(".btn").forEach(function(b){
       // V20: Stempel sofort beim Druecken speichern (vor GPS), damit nichts verloren geht
       var item={id:uid(),typ:typ,ts:ts,tzOffset:new Date(ts).getTimezoneOffset(),pos:null,plausibel:plausible(typ),gpsBis:ts+18000};
       log.push({id:item.id,typ:typ,ts:ts}); log=log.slice(-60); ls("faz_log",JSON.stringify(log));
-      queue.push(item); ls("faz_queue",JSON.stringify(queue)); stPut(item);
+      queue.push(item); ls("faz_queue",JSON.stringify(queue)); stPut(item); syncAnmelden(); // V34: Hintergrund-Versand sofort anmelden – wird die App vor Ende der Ortung geschlossen, geht der Stempel trotzdem raus
       render();
       show("warn",t("gpsWait"));
       getPos().then(function(pos){
@@ -321,7 +379,8 @@ function evNode(ev,withTickets){
         go.onclick=function(){ if(navigator.onLine===false){ show("err",t("tkNurOnline")); return; } go.disabled=true;
           if(!ni.value.trim()){ go.disabled=false; return; } send({action:"ticket",token:token,projekt:pr.id,was:"neu",terme:(ev.terme||[]),nr:ni.value.trim(),cid:"n"+uid()}).then(function(r){
             if(r&&r.ok&&r.ticket){ pr.tickets=pr.tickets.filter(function(x){return x.id!==r.ticket.id}); pr.tickets.push(r.ticket); pr.gesamt=(pr.gesamt||0)+1; ls("faz_plan",JSON.stringify(plan)); renderPlan(); show("ok",t("saved")); }
-            else { go.disabled=false; show("err",(r&&r.error==="nicht_gefunden"?t("tkNeuNicht"):t("eNet"))+(r&&r.msg?" ("+r.msg+")":"")); }
+            else if(r&&r.ok){ show("ok",t("saved")); if(plan) plan._t=0; loadPlan(true); } // V34: übernommen, Stand kam nicht mit → Plan frisch laden
+            else { go.disabled=false; show("err",(r&&(r.error==="nicht_gefunden"||r.error==="nummer"))?t("tkNeuNicht")+(r.msg?" ("+r.msg+")":""):(istFest(r)?fehlerText(r):t("eNochmal")+(r&&(r.msg||r.error)?" ("+(r.msg||r.error)+")":""))); } // V34: Serverfehler nicht mehr als „kein Internet“ melden; „Neues Schott“ wird nicht von selbst wiederholt
           }).catch(function(){ go.disabled=false; show("err",t("eNet")); });
         };
         box.appendChild(ni); box.appendChild(go); nbtn.replaceWith(box);
@@ -382,7 +441,10 @@ function renderPlan(){
   A.innerHTML="";S.innerHTML="";
   if(plan.hinweis==="kein_vorname"){A.appendChild(el("div","day",t("pNoName")));S.appendChild(el("div","day",t("pNoName")));return}
   var todayKey=dayKey(Date.now());
-  if(plan.azi) A.appendChild(dayNode(plan.azi,t("pToday")+" – "+fmtDay(plan.azi.datum),true,true));
+  // V34: Ist der gespeicherte Plan nicht von heute (App über Nacht offen oder morgens ohne Netz gestartet), nicht „Azi“ darüber schreiben
+  var planAlt=!!(plan.azi&&plan.azi.datum!==todayKey);
+  if(planAlt) A.appendChild(el("div","miss",t("pAlt")+fmtDay(plan.azi.datum)+" "+t("pAltHin")));
+  if(plan.azi) A.appendChild(dayNode(plan.azi,(planAlt?"":t("pToday")+" – ")+fmtDay(plan.azi.datum),true,!planAlt));
   if(plan.maine) A.appendChild(dayNode(plan.maine,t("pTomorrow")+" – "+fmtDay(plan.maine.datum),true,false));
   (plan.woche||[]).forEach(function(tag){ var det=tagDetail[tag.datum]; var dn=dayNode(det||tag,fmtDay(tag.datum)+(det?" ▲":" ▼"),!!det,tag.datum===todayKey); var h=dn.firstChild; h.style.cursor="pointer";
     h.onclick=function(){ if(det){ delete tagDetail[tag.datum]; renderPlan(); return; } if(navigator.onLine===false){ show("err",t("tkNurOnline")); return; } show("warn",t("pLoad"));
@@ -401,7 +463,7 @@ function pvPlaene(pr){
   var out=[], pl=(pr&&pr.plaene)||{};
   Object.keys(pl).forEach(function(id){
     var tks=(pr.tickets||[]).filter(function(x){return x.fpid===id});
-    if(tks.length&&pl[id].u&&pl[id].w&&pl[id].h) out.push({id:id,n:pl[id].n||"Plan",u:pl[id].u,w:pl[id].w,h:pl[id].h,tks:tks,eb:tks[0].ebNr||0});
+    if(tks.length&&pl[id].u&&pl[id].w&&pl[id].h) out.push({id:id,n:pl[id].n||"Plan",u:pl[id].u,a:pl[id].a||"",w:pl[id].w,h:pl[id].h,tks:tks,eb:tks[0].ebNr||0}); // a = kleines Bild (ab Server V36)
   });
   out.sort(function(a,b){ return (a.eb-b.eb)||a.n.localeCompare(b.n); });
   return out;
@@ -421,18 +483,31 @@ function pvOpen(pr){
 function pvClose(vonZurueck){
   if(!pv.on) return; pv.on=false; pv.key="";
   var b=$("pv"); if(b){ b.className=""; b.innerHTML=""; }
-  if(!vonZurueck){ try{ if(history.state&&history.state.pv) history.back(); }catch(e){} }
+  if(!vonZurueck){ try{ if(history.state&&history.state.pv){ pv.ignPop=true; setTimeout(function(){ pv.ignPop=false; },700); history.back(); } }catch(e){} }
 }
-window.addEventListener("popstate",function(){ if(pv.on) pvClose(true); });
+// V34: Das eigene „Zurück“ beim Schließen nicht noch einmal als Schließen werten (schloss sonst einen sofort danach geöffneten Plan wieder)
+window.addEventListener("popstate",function(){ if(pv.ignPop){ pv.ignPop=false; return; } if(pv.on) pvClose(true); });
 function pvFarbe(tk){ var s=tk._status==="fertig"?"Geschottet":tk.status; return s==="Geschottet"?"ge":(s==="In Bearbeitung"?"ib":(s==="Offen"?"of":"zu")); }
+var PV_ZMAX=40; // V34: vorher 8 – bei T1 Modul A (60 Punkte auf engem Raum) ließen sich die Punkte nicht einzeln antippen (Ghețau 26.11.2026)
 function pvZoom(z,cx,cy){
   var sc=$("pvS"), c=$("pvC"); if(!sc||!c) return;
-  z=Math.max(1,Math.min(8,z));
+  z=Math.max(1,Math.min(PV_ZMAX,z));
   var w0=c.offsetWidth||1, h0=c.offsetHeight||1;
   if(cx===undefined){ cx=sc.clientWidth/2; cy=sc.clientHeight/2; }
   var fx=(sc.scrollLeft+cx)/w0, fy=(sc.scrollTop+cy)/h0;
   pv.z=z; c.style.width=(z*100)+"%";
   sc.scrollLeft=fx*c.offsetWidth-cx; sc.scrollTop=fy*c.offsetHeight-cy;
+  if(pv.scharf) pv.scharf();
+}
+/* V34: Beim Öffnen gleich auf den Bereich zoomen, in dem die Punkte liegen (statt ganzes Blatt mit einem Punkthaufen). */
+function pvAufPunkte(cur){
+  var sc=$("pvS"), c=$("pvC"); if(!sc||!c||!cur.tks.length) return;
+  var x0=1,x1=0,y0=1,y1=0;
+  cur.tks.forEach(function(k){ var x=k.px/cur.w, y=k.py/cur.h; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; });
+  var W=sc.clientWidth||1, H=sc.clientHeight||1, bw=Math.max(x1-x0,0.02)*1.25, bh=Math.max(y1-y0,0.02)*1.25;
+  var z=Math.min(1/bw, (H*cur.w)/(W*cur.h*bh)); z=Math.max(1,Math.min(12,z));
+  pv.z=z; c.style.width=(z*100)+"%";
+  sc.scrollLeft=((x0+x1)/2)*c.offsetWidth-W/2; sc.scrollTop=((y0+y1)/2)*c.offsetHeight-H/2;
 }
 function pvRender(){
   var box=$("pv"); if(!box) return;
@@ -441,19 +516,44 @@ function pvRender(){
   var fps=pvPlaene(pr); if(!fps.length){ pvClose(); return; }
   var cur=fps.filter(function(f){return f.id===pv.fp})[0]||fps[0]; pv.fp=cur.id;
   var key=pr.id+"|"+cur.id+"|"+lang;
+  var neu=false;
   if(pv.key!==key){
-    pv.key=key; pv.z=1; box.innerHTML=""; box.className="on";
+    neu=true; pv.key=key; pv.z=1; pv.gezeigt=null; pv.scharf=null; pv.bild=""; box.innerHTML=""; box.className="on";
     var h=el("div","pvh"); h.appendChild(el("div","ti",pr.name));
-    var zm=el("button","","−"); zm.onclick=function(){ pvZoom(pv.z/1.5); }; h.appendChild(zm);
-    var zp=el("button","","+"); zp.onclick=function(){ pvZoom(pv.z*1.5); }; h.appendChild(zp);
+    var zm=el("button","","−"); zm.onclick=function(){ pvZoom(pv.z/2); }; h.appendChild(zm);
+    var zp=el("button","","+"); zp.onclick=function(){ pvZoom(pv.z*2); }; h.appendChild(zp);
     var x=el("button","","✕ "+t("pvZu")); x.onclick=function(){ pvClose(); }; h.appendChild(x);
     box.appendChild(h);
     if(fps.length>1){ var tb=el("div","pvt"); fps.forEach(function(f){ var b=el("button",f.id===cur.id?"on":"",f.n+" ("+f.tks.length+")"); b.onclick=function(){ pv.fp=f.id; pv.sel=null; pvRender(); }; tb.appendChild(b); }); box.appendChild(tb); }
     else box.appendChild(el("div","pvn",cur.n));
+    var st=el("div","pvst"); st.id="pvSt"; box.appendChild(st); // V34: Lade-/Fehlerzeile, immer sichtbar (vorher nur ohne gewähltes Schott)
     var sc=el("div","pvs"); sc.id="pvS"; var c=el("div","pvc"); c.id="pvC";
-    var img=document.createElement("img"); img.alt=""; img.src=cur.u;
-    img.onerror=function(){ var m=$("pvMsg"); if(m){ m.className="miss"; m.textContent=t("pvErr"); } };
+    // V34: Fläche hat immer das Seitenverhältnis des Plans → die Punkte sitzen richtig, auch wenn das Bild fehlt.
+    // Vorher fiel die Fläche ohne Bild auf Höhe 0 zusammen und alle Punkte lagen oben in einer Reihe (Victor 26.11.2026).
+    try{ c.style.aspectRatio=cur.w+" / "+cur.h; }catch(e){}
+    var img=document.createElement("img"); img.alt=""; img.style.height="100%";
+    // Erst das kleine Bild (höchstens 2048 px, schnell auch bei schwachem Netz), sonst das große; „Nochmal laden“ statt Sackgasse.
+    var quellen=[]; if(cur.a) quellen.push(cur.a); if(quellen.indexOf(cur.u)<0) quellen.push(cur.u);
+    var qi=0, gross=quellen.length<2, zurueck=false;
+    var laden=function(){ pv.bild="lade"; st.className="pvst on"; st.textContent=t("pvLade"); img.src=quellen[qi]; };
+    // Jeder Handler prüft pv.key===key: Nach einem Planwechsel darf das alte Bild den Zustand des neuen Plans nicht mehr ändern.
+    img.onload=function(){ if(pv.key!==key) return; pv.bild="ok"; st.className="pvst"; st.textContent=""; if(pv.scharf) pv.scharf(); }; // ist schon hineingezoomt (Start auf den Punkten): scharfes Bild gleich nachholen
+    img.onerror=function(){
+      if(pv.key!==key) return;
+      if(pv.bild==="ok"){ if(!zurueck){ zurueck=true; img.src=quellen[qi]; } return; } // scharfes Bild kam nicht: das kleine bleibt
+      if(qi<quellen.length-1){ qi++; img.src=quellen[qi]; return; }
+      pv.bild="fehler"; st.className="pvst on err"; st.textContent=t("pvErr")+" ";
+      var rb=el("button","",t("pvRetry")); rb.onclick=function(){ qi=0; img.removeAttribute("src"); laden(); }; st.appendChild(rb);
+    };
+    // Beim Hineinzoomen das scharfe Bild nachladen (nur wenn es ein anderes und nicht riesig ist)
+    pv.scharf=function(){
+      if(gross||pv.bild!=="ok"||pv.z<3||cur.w*cur.h>40e6||navigator.onLine===false) return;
+      gross=true; var g=new Image(); g.onload=function(){ if(pv.on&&pv.key===key) img.src=cur.u; };
+      g.onerror=function(){ setTimeout(function(){ gross=false; },15000); }; // scharfes Bild kam nicht: beim nächsten Zoomen (frühestens nach 15 s) noch einmal versuchen
+      g.src=cur.u;
+    };
     c.appendChild(img); var pins=el("div",""); pins.id="pvP"; c.appendChild(pins); sc.appendChild(c); box.appendChild(sc);
+    laden();
     // Zwei-Finger-Zoom
     var d0=0,z0=1;
     function dist(e){ var a=e.touches[0],b=e.touches[1]; return Math.sqrt(Math.pow(a.clientX-b.clientX,2)+Math.pow(a.clientY-b.clientY,2)); }
@@ -481,9 +581,24 @@ function pvRender(){
     K.className="pvk";
     var m=el("div","l",t("pvHint")); m.id="pvMsg"; K.appendChild(m);
     var leg=el("div","pvl"); [["zu","Zu Schotten"],["ib","In Bearbeitung"],["of","Offen"],["ge","Geschottet"]].forEach(function(g){ var n=cur.tks.filter(function(x){return pvFarbe(tkEff(x))===g[0]}).length; if(!n) return; var s=el("span","pin "+g[0],String(n)); s.style.position="static"; s.style.transform="none"; leg.appendChild(s); leg.appendChild(el("span","",g[1])); }); K.appendChild(leg);
+    // V34: alle Schotts dieses Plans auch als Nummern zum Antippen – erreichbar, selbst wenn Punkte übereinander liegen
+    K.appendChild(el("div","l",t("pvListe")));
+    var cl=el("div","pvchips");
+    cur.tks.slice().sort(function(a,b){return a.nr-b.nr}).forEach(function(tk0){ var tk=tkEff(tk0);
+      var cb=el("button","pin "+pvFarbe(tk),(tk.status==="Geschottet"||tk._status==="fertig"?"✓":"")+"#"+tk.nr); cb.style.position="static"; cb.style.transform="none";
+      cb.onclick=function(){ pv.sel=tk.id; tkAuf[tk.id]=true; pvRender(); }; cl.appendChild(cb); });
+    K.appendChild(cl);
     var ohne=(pr.tickets||[]).filter(function(x){return !x.fpid||!pr.plaene[x.fpid]});
     if(ohne.length) K.appendChild(el("div","l",t("pvOhne")+ohne.map(function(x){return "#"+x.nr}).join(", ")));
   }
+  if(neu) pvAufPunkte(cur); // erst hier: das Feld unten ist gefüllt, die Planhöhe steht fest
+  // V34: gewählten Punkt in den sichtbaren Teil des Plans holen (das Feld unten wird beim Öffnen größer und verdeckte ihn)
+  if(pv.sel&&pv.gezeigt!==pv.sel){
+    var sp=P.querySelector(".pin.sel"), scv=$("pvS");
+    if(sp&&scv){ var r1=sp.getBoundingClientRect(), r2=scv.getBoundingClientRect();
+      if(r1.left<r2.left+24||r1.right>r2.right-24||r1.top<r2.top+24||r1.bottom>r2.bottom-24){ scv.scrollLeft+=(r1.left+r1.width/2)-(r2.left+r2.width/2); scv.scrollTop+=(r1.top+r1.height/2)-(r2.top+r2.height/2); } }
+  }
+  pv.gezeigt=pv.sel;
 }
 function loadPlan(frisch){
   if(planBusy||!token||!$("aziBox")) return Promise.resolve();
@@ -492,7 +607,11 @@ function loadPlan(frisch){
   return send({action:"plan",token:token,frisch:!!frisch}).then(function(r){
     planBusy=false;
     if(r&&r.ok){r._t=Date.now();r._offline=false;plan=r;ls("faz_plan",JSON.stringify(plan));renderPlan()}
-    else if(r&&r.error==="plan"){ if(plan){plan._offline=true;renderPlan()} else {$("aziBox").textContent=t("pErr")+" "+(r.msg||"");$("saptBox").textContent=t("pErr")} }
+    else if(r&&r.error==="plan"){ if(plan){plan._offline=true;renderPlan();show("err",t("pErr")+(r.msg?" ("+r.msg+")":""))} else {$("aziBox").textContent=t("pErr")+" "+(r.msg||"");$("saptBox").textContent=t("pErr")} } // V34: Serverfehler beim Laden auch dann melden, wenn ein alter Plan da ist
+    else if(r&&r.error==="token"){ show("err",t("invalid")); }
+    else { // V34: jeder andere Serverfehler (server, busy …) – vorher passierte nichts und „Se încarcă planul…“ blieb stehen
+      if(plan){ plan._offline=true; renderPlan(); } else { $("aziBox").textContent=t("pErr"); $("saptBox").textContent=t("pErr"); }
+      show("err",t("pErr")+(r&&(r.msg||r.error)?" ("+(r.msg||r.error)+")":"")); }
   }).catch(function(){planBusy=false;if(plan){plan._offline=true;renderPlan()}else{$("aziBox").textContent=t("pOffline");$("saptBox").textContent=t("pOffline")}});
 }
 $("aziReload").onclick=function(){if(plan)plan._t=0;loadPlan(true)};
@@ -523,19 +642,39 @@ function tqDel(id){ return idb().then(function(db){ return new Promise(function(
 function tqPush(pr,tk,payload){
   if(!payload.cid) payload.cid="t"+uid();
   if(payload.als===undefined) payload.als=ALS||""; // "" = eigene Ansicht, auch wenn später ein anderer Monteur gewählt wird
-  var item={id:payload.cid,ts:Date.now(),pr:pr.id,tk:tk.id,p:payload};
+  if(!payload.zeit) payload.zeit=Date.now(); // V34: Zeitpunkt der Eingabe am Handy – der Server (ab V36) nimmt ihn für Foto, Problem und Material statt der Sendezeit
+  var jetzt=Date.now(); tqPush._ts=Math.max(jetzt,(tqPush._ts||0)+1); // streng aufsteigend: die Reihenfolge je Ticket bleibt eindeutig
+  var item={id:payload.cid,ts:tqPush._ts,pr:pr.id,tk:tk.id,p:payload};
+  if(payload._next){ item.n=1; item.next=payload._next; delete payload._next; } // kam mit Serverfehler zurück: erst nach kurzer Pause erneut
   return tqSave(item).then(function(){return true}).catch(function(){return false}).then(function(ok){
     if(!ok){ show("err",t("tkVoll")); return false; }
-    tq.push(item); renderPlan(); show("warn",t("queued")); syncAnmelden(); return true;
+    tq.push(item); renderPlan(); if(!item.next) show("warn",t(navigator.onLine===false?"queued":"tkWarteHin")); syncAnmelden();
+    if(!item.next) setTimeout(tqFlush,60); // V34: gleich lossenden, nicht erst beim nächsten 30-Sekunden-Takt
+    return true;
   });
 }
 function tqFuer(tkId){ return tq.filter(function(q){return q.tk===tkId}); }
 var tqBusy=false;
 function tkLaeuft(){ return Object.keys(tkBusy).some(function(k){return tkBusy[k]}); }
+/* V34: Reihenfolge beim Nachsenden. Vorher streng der Reihe nach – Raum, Höhe, Haken warteten hinter jedem Foto (im Keller Minuten bis Stunden),
+   das Büro sah „Angaben fehlen“, der Monteur „ich habe es doch eingetragen“ (Victor, Hangar 1 #105, 26.11.2026).
+   Jetzt: 1. kleine Eingaben (Haken, Felder, Punkte, Material), 2. Fotos, 3. FERTIG/Problem erst, wenn vom selben Schott nichts Früheres mehr wartet.
+   Innerhalb eines Schotts bleibt die Reihenfolge der kleinen Eingaben erhalten. Einträge in der Wartezeit nach einem Serverfehler werden übersprungen. */
+function tqKlein(q){ var w=q&&q.p&&q.p.was; return w!=="foto"&&w!=="status"; }
+function tqNext(){
+  var now=Date.now(), zu={}, i, q;
+  function frei(x){ return !(x.next&&x.next>now); }
+  for(i=0;i<tq.length;i++){ q=tq[i]; if(!tqKlein(q)) continue; if(zu[q.tk]) continue; if(frei(q)) return q; zu[q.tk]=1; }
+  for(i=0;i<tq.length;i++){ q=tq[i]; if(tqKlein(q)||!frei(q)) continue;
+    if(q.p.was==="status"){ var vor=false; for(var j=0;j<i;j++){ if(tq[j].tk===q.tk){ vor=true; break; } } if(vor) continue; }
+    return q; }
+  return null;
+}
 function tqFlush(){
   if(tqBusy||!tq.length||!token||tkLaeuft()) return Promise.resolve();
-  var item=tq[0];
-  if(item.next&&item.next>Date.now()) return Promise.resolve(); // nach Serverfehler: Wartezeit abwarten (schont das Google-Tageskontingent)
+  if(tqFlush.pause&&tqFlush.pause>Date.now()) return Promise.resolve();
+  var item=tqNext();
+  if(!item) return Promise.resolve(); // alles in der Wartezeit nach einem Serverfehler (schont das Google-Tageskontingent)
   tqBusy=true;
   return send(item.p).then(function(r){
     tqBusy=false;
@@ -544,14 +683,33 @@ function tqFlush(){
     if(r.ok||r.error==="unvollstaendig"){
       tq=tq.filter(function(q){return q.id!==item.id}); tqDel(item.id);
       if(r.ok&&r.ticket) tkUpdate(item.tk,r.ticket);
-      else if(r.ok) renderPlan();
-      else { if(r.ticket) tkUpdate(item.tk,r.ticket); show("err",t("tkFehlt")+" "+(r.fehlt||[]).join(", ")); }
+      else if(r.ok){ // V34: gespeichert, aber ohne neuen Stand vom Server (ab V36 möglich) → Status selbst nachführen und den Plan nachladen
+        if(item.p.was==="status"&&tkFind(item.tk)) tkUpdate(item.tk,{status:item.p.status==="fertig"?"Geschottet":"zu Klären/Offen",fertigMoeglich:false});
+        renderPlan(); if(plan){ plan._t=0; loadPlan(); } }
+      else { // V34: abgelehntes FERTIG bleibt am Schott stehen (die kurze Meldung sieht der Monteur oft nicht mehr)
+        if(r.ticket) tkUpdate(item.tk,r.ticket);
+        if(item.p.was==="status"&&item.p.status==="fertig") matDa[item.tk]=true; // Material ging vor FERTIG schon raus → beim nächsten GATA nur FERTIG (kein doppeltes Material)
+        var ft=t("tkFertig")+" – "+t("tkFehlt")+" "+(r.fehlt||[]).join(", "); tkErrSet(item.tk,ft); show("err",ft); renderPlan(); }
+      if(r.ok&&!tq.length) show("ok",t("saved")); // alles aus der Warteliste ist beim Server
+      return tqFlush();
+    }
+    if(istFest(r)&&item.p.was!=="foto"){
+      // V34: Der Server nimmt diesen Eintrag nie an (z. B. Text im Zahlenfeld, Punkt in Fieldwire gelöscht) → nicht endlos wiederholen
+      // und nichts dahinter aufhalten. Der Monteur sieht am Schott, was nicht gespeichert wurde.
+      // Fotos werden nie von selbst gelöscht (ein „Foto vorher“ lässt sich nicht nachholen): sie bleiben mit Wartezeit liegen
+      // und lassen sich nach einer halben Stunde am Schott von Hand löschen.
+      tq=tq.filter(function(q){return q.id!==item.id}); tqDel(item.id);
+      tkErrSet(item.tk,fehlerText(r)); show("err",fehlerText(r)); renderPlan();
       return tqFlush();
     }
     // V32: sonstiger Serverfehler -> Eingabe (z. B. Foto) NICHT wegwerfen, später erneut (30 s, 1, 2, 4 … max. 30 min)
+    if(!tq.some(function(q){return q.id===item.id})) return; // inzwischen vom Monteur gelöscht: nicht wieder anlegen
     item.n=(item.n||0)+1; item.next=Date.now()+Math.min(30000*Math.pow(2,item.n-1),1800000); item.fehler=r.msg||r.error||"";
     tqSave(item).catch(function(){});
-    show("err",t("eNet")+(r.msg?" ("+r.msg+")":"")); renderPlan();
+    show("err",item.p.was==="foto"?t("eSrv"):fehlerText(r)); renderPlan(); // Foto bleibt immer liegen, also nie „nicht gespeichert, nochmal schreiben“
+    // V34: der nächste Eintrag darf trotzdem raus (z. B. Felder, während ein Foto nicht durchgeht) – aber erst beim nächsten Takt,
+    // damit bei einer Serverstörung nicht die ganze Warteschlange auf einmal anklopft.
+    tqFlush.pause=Date.now()+20000;
   }).catch(function(){ tqBusy=false; });
 }
 setInterval(tqFlush,30000);
@@ -564,7 +722,9 @@ function tkEff(tk){
   function drop(n){ e.fehlt=e.fehlt.filter(function(x){return x!==n}); }
   q.forEach(function(it){ var p=it.p||{};
     if(p.was==="haken"){ e.punkte.forEach(function(x){ if(x.id===p.punkt){ x.s=p.wert?1:0; x._p=true; } }); }
-    else if(p.was==="punkt"){ e.punkte.push({id:"q"+it.id,n:p.text+" ("+(plan&&plan.vorname||"")+")",s:1,_p:true}); }
+    // V34: wartender eigener Punkt ist OFFEN wie auf dem Server (vorher als abgehakt gezeigt → FERTIG ging in die Warteschlange und
+    // wurde später mit „Punkte ohne Haken“ abgelehnt). Der Monteur kann ihn schon abhaken: der Haken geht dann mit dem Punkt mit (erledigt).
+    else if(p.was==="punkt"){ e.punkte.push({id:"q"+it.id,n:p.text+" ("+(plan&&plan.vorname||"")+")",s:p.erledigt?1:0,_p:true,_qid:it.id}); }
     else if(p.was==="feld"){ var f=e.offen.filter(function(x){return x.id===p.feld})[0]; e.offen=e.offen.filter(function(x){return x.id!==p.feld}); if(f) drop(f.name); }
     else if(p.was==="foto"){ if(p.art==="nachher"){e.fotos.nachher++;drop("Foto nachher")} else {e.fotos.vorher++;drop("Foto vorher")} e.bilder.push({u:p.b64,f:p.b64,a:p.art==="nachher"?"n":"v",_p:true}); }
     else if(p.was==="status"){ e._status=p.status; }
@@ -581,8 +741,11 @@ function picsNode(bilder, art){
   if(!list.length) return null;
   var d=el("div","pics");
   list.forEach(function(b){
-    var img=document.createElement("img"); img.src=b.u; img.loading="lazy"; img.alt="";
+    var img=document.createElement("img"); img.loading="lazy"; img.alt="";
     var w;
+    // V34: Vorschau kommt nicht (Ghețau 26.11.2026: leere Kästchen bei „Poze existente“) → einmal das Originalbild probieren, sonst Kästchen ausblenden
+    var zweit=false; img.onerror=function(){ if(!zweit&&b.f&&b.f!==b.u){ zweit=true; img.src=b.f; } else if(w){ w.style.display="none"; } };
+    img.src=b.u;
     if(b._p){ w=el("span","pic"); w.appendChild(img); w.appendChild(el("span","wait",t("pending"))); }
     else { w=el("a"); w.href=b.f||b.u; w.target="_blank"; w.rel="noopener"; w.appendChild(img); }
     d.appendChild(w);
@@ -616,10 +779,13 @@ function tkSend(pr, tk, payload, btn){
   return send(payload).then(function(r){
     tkBusy[tk.id]=false; if(btn) btn.disabled=false; setTimeout(tqFlush,0); // Wartendes danach der Reihe nach senden
     if(r&&r.ok&&r.ticket){ tkUpdate(tk.id, r.ticket); show("ok",t("saved")); }
-    else if(r&&r.ok){ show("ok",t("saved")); }
+    else if(r&&r.ok){ show("ok",t("saved")); if(plan){ plan._t=0; loadPlan(); } } // V34: ohne neuen Stand vom Server → Plan nachladen
     else if(r&&r.error==="unvollstaendig"){ if(r.ticket) tkUpdate(tk.id,r.ticket); show("err",t("tkFehlt")+" "+(r.fehlt||[]).join(", ")); }
     else if(r&&r.error==="busy"){ return tqPush(pr,tk,payload).then(function(){return null}); }
-    else show("err",t("eNet")+(r&&r.msg?" ("+r.msg+")":""));
+    else if(r&&r.error==="token"){ show("err",t("invalid")); }
+    else if(istFest(r)){ tkErrSet(tk.id,fehlerText(r)); show("err",fehlerText(r)); renderPlan(); } // V34: klar sagen, was nicht gespeichert wurde
+    else { // V34: vorübergehender Serverfehler → Eingabe nicht wegwerfen (vorher: Meldung „kein Internet“, Eingabe weg), automatisch wiederholen
+      show("err",fehlerText(r)); payload._next=Date.now()+30000; return tqPush(pr,tk,payload).then(function(){return null}); }
     return r;
   }).catch(function(){ tkBusy[tk.id]=false; if(btn) btn.disabled=false; return tqPush(pr,tk,payload).then(function(){return null}); });
 }
@@ -640,7 +806,7 @@ function fotoAufnehmen(pr, tk, art, btn, galerie){
       var b64=c.toDataURL("image/jpeg",0.72);
       fotoSenden(pr, tk, {was:"foto", art:art, b64:b64});
     };
-    img.onerror=function(){ URL.revokeObjectURL(url); show("err",t("eNet")); };
+    img.onerror=function(){ URL.revokeObjectURL(url); show("err",t("eFoto")); }; // V34: vorher „kein Internet“, obwohl nur das Bild nicht lesbar war
     img.src=url;
   };
   inp.click();
@@ -653,12 +819,54 @@ function fotoSenden(pr, tk, p){
 }
 function galBtn(pr, tk, art){ var g=el("button","linkbtn","🖼 "+t("tkGalerie")); g.onclick=function(){ fotoAufnehmen(pr,tk,art,g,true); }; return g; }
 var fEing={}; // getippte Angaben je Ticket|Feld, überleben Neuaufbau der Ansicht (03.11.2026)
+var pEing={}, probAuf={}; // V34: getippter Text im „+“-Feld und offener Problem-Kasten je Ticket, überleben das Neuzeichnen
+/* V34: Eingabe-Prüfung für Maße und Montagehöhe (Florin 26.11.2026). Anlass: tägliche Rückfragen per WhatsApp –
+   „05 x 05“ bei Breite/Höhe (Victor 25.11.), „60 x 3“ mit 3 = Montagehöhe (Ghețau 25.11.), 0 als Maß, „O“ statt 0.
+   Liefert {wert} (bereinigt, ohne Einheit), {fehler} (wird nicht gesendet) oder {frage, wert} (Monteur bestätigt). */
+function zahlLesen(roh){
+  var s=String(roh||"").trim().replace(/\s+/g," ");
+  var m=s.match(/^([0-9oO.,]+) ?(mm|cm|m)?\.?$/i); if(!m) return null;
+  var z=m[1].replace(/[oO]/g,"0").replace(",",".");
+  if(!/^\d+(\.\d+)?$/.test(z)) return null;
+  return {n:parseFloat(z), e:(m[2]||"").toLowerCase(), dez:z.indexOf(".")>=0};
+}
+function feldPruefen(f,roh){
+  var n=f.name, v=String(roh).trim(), z;
+  if(/\(mm\)/i.test(n)){
+    z=zahlLesen(v); if(!z) return {fehler:t("eMassZahl")+n};
+    // Einheit umrechnen; ohne Einheit mit Komma unter 10 = Meter (so rechnet auch der Server seit 03.11.: 0,15 → 150)
+    var mm=z.e==="cm"?z.n*10:(z.e==="m"?z.n*1000:((z.dez&&z.n<10&&!z.e)?z.n*1000:z.n));
+    mm=Math.round(mm*10)/10;
+    if(mm===0) return {fehler:t("eMassNull")+n};
+    var w=mm>=10?String(mm).replace(".",","):String(Math.max(1,Math.round(mm)));
+    if(mm<10) return {frage:n+": "+w+t("fMassKlein"), wert:w};
+    if(mm>3000) return {frage:n+": "+w+t("fMassGross"), wert:w};
+    return {wert:w};
+  }
+  if(/montageh/i.test(n)){
+    z=zahlLesen(v); if(!z) return {fehler:t("eHoeheZahl")+n};
+    var me=z.e==="cm"?z.n/100:(z.e==="mm"?z.n/1000:z.n); me=Math.round(me*100)/100;
+    var wm=String(me).replace(".",",");
+    if(me===0) return {frage:t("fHoeheNull"), wert:"0"};
+    if(me>15) return {frage:wm+t("fHoeheGross"), wert:wm};
+    return {wert:wm};
+  }
+  if(f.typ==="zahl"&&!/^-?\d+([.,]\d+)?$/.test(v)) return {fehler:t("eZahl")+n};
+  return {wert:v};
+}
 function tkNode(pr, tk){
   tk=tkEff(tk); // wartende Aktionen überlagern
   var k=el("div","tk"+(tk.status==="Geschottet"?" gata":(tk.fertigMoeglich?" ready":"")));
   var tn=el("div","tn","#"+tk.nr+" "+tk.name);
   if(tk._q) tn.appendChild(el("span","pend",t("tkWarte")+tk._q));
   k.appendChild(tn);
+  // V34: dauerhaft abgelehnte Eingabe bleibt sichtbar, bis der Monteur sie bestätigt
+  if(tkErr[tk.id]){ var eb=el("div","miss","⚠ "+tkErr[tk.id]+" "); var ew=el("button","linkbtn",t("eWeg")); ew.onclick=function(){ tkErrSet(tk.id,null); renderPlan(); }; eb.appendChild(ew); k.appendChild(eb); }
+  // V34: Einträge, die nach 8 Versuchen (rund anderthalb Stunden) nicht durchgehen, blockieren sonst FERTIG für immer → der Monteur kann sie löschen
+  var haengt=tqFuer(tk.id).filter(function(q){return (q.n||0)>=8});
+  if(haengt.length){ var hb=el("div","miss","⚠ "+t("tkHaengt")+haengt.length+(haengt[0].fehler?" ("+haengt[0].fehler+")":"")+" "); var hx=el("button","linkbtn",t("tkVerwerfen"));
+    hx.onclick=function(){ ask(t("tkVerwerfenFrage")).then(function(y){ if(!y) return; haengt.forEach(function(q){ tq=tq.filter(function(x){return x.id!==q.id}); tqDel(q.id); }); renderPlan(); tqFlush(); }); };
+    hb.appendChild(hx); k.appendChild(hb); }
   // Zugeklappt: nur Nummer und Name, Tippen klappt auf (28.10.2026)
   tn.style.cursor="pointer"; tn.appendChild(el("span","tm"," "+(tkAuf[tk.id]?"▲":"▼")));
   tn.onclick=function(){ tkAuf[tk.id]=!tkAuf[tk.id]; renderPlan(); };
@@ -669,6 +877,9 @@ function tkNode(pr, tk){
   if(info.notiz) k.appendChild(el("div","h","ℹ "+ohnePreis(info.notiz)));
   if(info.bsk) k.appendChild(el("div","h","BSK: "+info.bsk));
   var done=tk.status==="Geschottet";
+  // V34: Nach PROBLEM steht das Schott auf „zu Klären/Offen“ (oder das Büro hat es weitergestellt): nur noch die Meldung zeigen.
+  // Vorher blieben alle Schritte samt GATA tippbar, bis der Plan neu geladen war – FERTIG hätte das gemeldete Problem überschrieben.
+  if(tk.status&&["Offen","Zu Schotten","In Bearbeitung","Geschottet"].indexOf(tk.status)<0){ k.appendChild(el("div","miss",t("tkProblemDone")+" ("+tk.status+")")); return k; }
   // Schritt 1: hinfinden
   var s1=el("div","step"); s1.appendChild(el("div","sh","1 · "+t("tkS1")));
   if(tk.plan===false) s1.appendChild(el("div","miss",t("tkKeinPin")));
@@ -680,16 +891,23 @@ function tkNode(pr, tk){
   if(tk._status==="klaeren"){ k.appendChild(el("div","miss",t("tkProblemDone")+" ("+t("pending")+")")); return k; }
   // PROBLEM gleich am Anfang (Anja, 27.10.2026): ohne Foto, Haken oder Felder, für jeden Grund (kein Zugang, nicht machbar, noch nicht fertig)
   var bp=el("button","prob",t("tkProblem")); bp.style.cssText="width:100%;margin-top:8px;padding:14px;border:0;border-radius:12px;font-size:18px;font-weight:700";
-  bp.onclick=function(){
-    var box=el("div","probbox");
-    var fb=el("button","cam",t("tkProblemFoto")); fb.onclick=function(){ fotoAufnehmen(pr,tk,"vorher",fb); }; var fbG=galBtn(pr,tk,"vorher");
-    var txt=document.createElement("textarea"); txt.rows=3; txt.placeholder=t("tkGrundText");
-    var go=el("button","prob",t("tkMelden"));
-    go.onclick=function(){ var g=txt.value.trim(); if(!g) return; tkSend(pr,tk,{was:"status",status:"klaeren",grund:g},go); };
-    box.appendChild(fb); box.appendChild(fbG); box.appendChild(txt); box.appendChild(go);
-    s1.appendChild(box); bp.disabled=true;
-  };
-  if(!done) s1.appendChild(bp);
+  // V34: Der Problem-Kasten ist ein gemerkter Zustand (probAuf). Vorher verschwand er samt getipptem Text, sobald die Ansicht neu gezeichnet
+  // wurde – zum Beispiel direkt nach dem Problem-Foto.
+  bp.onclick=function(){ probAuf[tk.id]={text:""}; renderPlan(); };
+  if(!done){
+    s1.appendChild(bp);
+    if(probAuf[tk.id]){
+      bp.disabled=true;
+      var box=el("div","probbox");
+      var fb=el("button","cam",t("tkProblemFoto")); fb.onclick=function(){ fotoAufnehmen(pr,tk,"vorher",fb); }; var fbG=galBtn(pr,tk,"vorher");
+      var txt=document.createElement("textarea"); txt.rows=3; txt.placeholder=t("tkGrundText"); txt.value=probAuf[tk.id].text||""; txt.oninput=function(){ if(probAuf[tk.id]) probAuf[tk.id].text=txt.value; };
+      var go=el("button","prob",t("tkMelden"));
+      go.onclick=function(){ var g=txt.value.trim(); if(!g){ txt.focus(); return; } delete probAuf[tk.id]; tkSend(pr,tk,{was:"status",status:"klaeren",grund:g},go); };
+      var pzu=el("button","linkbtn","✕"); pzu.onclick=function(){ delete probAuf[tk.id]; renderPlan(); };
+      box.appendChild(fb); box.appendChild(fbG); box.appendChild(txt); box.appendChild(go); box.appendChild(pzu);
+      s1.appendChild(box);
+    }
+  }
   // Schritt 2: Foto vorher
   var fo=tk.fotos||{};
   var s2=el("div","step"+(fo.vorher?" ok":"")); s2.appendChild(el("div","sh","2 · "+t("tkS2")+(fo.vorher?" ✓ "+fo.vorher:"")));
@@ -703,17 +921,26 @@ function tkNode(pr, tk){
     // alle Punkte zeigen, erledigte durchgestrichen (28.10.2026)
     var row=el("label","chk"+(p.s===1?" done":"")+(p._p?" pend2":""));
     var cb=document.createElement("input"); cb.type="checkbox"; cb.checked=p.s===1; cb.disabled=/^info:/i.test(p.n);
-    cb.onchange=function(){ tkSend(pr,tk,{was:"haken",punkt:p.id,wert:cb.checked}); };
+    cb.onchange=function(){
+      if(p._qid){ // eigener Punkt, noch nicht gesendet: Haken am wartenden Eintrag merken
+        var it=tq.filter(function(q){return q.id===p._qid})[0];
+        if(it){ it.p.erledigt=cb.checked; tqSave(it).catch(function(){}); }
+        renderPlan(); return;
+      }
+      tkSend(pr,tk,{was:"haken",punkt:p.id,wert:cb.checked}); };
     row.appendChild(cb); row.appendChild(el("span","",ohnePreis(p.n))); s3.appendChild(row);
   });
   var np=el("div","fi"); var ni=document.createElement("input"); ni.type="text"; ni.placeholder=t("tkPunktNeu"); ni.maxLength=160;
-  var nb=el("button","sv","+"); nb.title=t("tkPunktAdd"); nb.onclick=function(){ var v=ni.value.trim(); if(v) tkSend(pr,tk,{was:"punkt",text:v},nb); };
+  ni.value=pEing[tk.id]||""; ni.oninput=function(){ pEing[tk.id]=ni.value; }; // V34: getippter Text übersteht das Neuzeichnen (z. B. wenn im Hintergrund ein Foto fertig wird)
+  var nb=el("button","sv","+"); nb.title=t("tkPunktAdd"); nb.onclick=function(){ var v=ni.value.trim(); if(v){ delete pEing[tk.id]; tkSend(pr,tk,{was:"punkt",text:v},nb); } };
   np.appendChild(ni); np.appendChild(nb); s3.appendChild(np);
   k.appendChild(s3);
   // Schritt 4: Felder
   var offenF=tk.offen||[];
   var s4=el("div","step"+(offenF.some(function(f){return f.pflicht})?"":" ok")); s4.appendChild(el("div","sh","4 · "+t("tkS4")+(offenF.length?"":" ✓")));
   var inputs=[];
+  // V34: Projekt ohne Maßfelder in Fieldwire (Pro7, Securetec): sagen, wohin die Maße gehören (Alex 26.11.2026: „nu apare lungimea și lățimea“)
+  if(tk.ohneMass&&!done) s4.appendChild(el("div","l",t("tkMassHinweis")));
 if(offenF.some(function(f){return /breite|höhe|hoehe/i.test(f.name)})) s4.appendChild(el("div","l",lang==="de"?"Rund: Durchmesser bei Breite und Höhe eintragen (z. B. 200 × 200).":"Rotund: diametrul la lățime și la înălțime (ex. 200 × 200)."));
   offenF.forEach(function(f){
     var row=el("div","fld");
@@ -731,9 +958,22 @@ if(offenF.some(function(f){return /breite|höhe|hoehe/i.test(f.name)})) s4.appen
     s4.appendChild(row);
   });
   if(offenF.length){ var ub=el("button","neu",t("tkUebernehmen")); ub.onclick=function(){
-    var jobs=inputs.filter(function(x){return String(x.el.value||"").trim()}).map(function(x){ return x.wahl?{was:"feld",feld:x.f.id,uuid:x.el.value}:{was:"feld",feld:x.f.id,wert:String(x.el.value).trim()}; });
-    if(!jobs.length){ fVers[tk.id]=true; renderPlan(); return; } ub.disabled=true;
-    jobs.reduce(function(pz,j){ return pz.then(function(){ return tkSend(pr,tk,j); }); }, Promise.resolve()).then(function(){ fVers[tk.id]=true; renderPlan(); }); };
+    var gef=inputs.filter(function(x){return String(x.el.value||"").trim()});
+    if(!gef.length){ fVers[tk.id]=true; renderPlan(); return; }
+    // V34: Eingabe-Prüfung vor dem Senden (feldPruefen). Ein Fehler hält alles an und zeigt, welches Feld; eine Rückfrage („5 mm?“) muss bestätigt werden.
+    var jobs=[], fragen=[];
+    for(var gi=0;gi<gef.length;gi++){ var x=gef[gi];
+      if(x.wahl){ jobs.push({was:"feld",feld:x.f.id,uuid:x.el.value}); continue; }
+      var pz=feldPruefen(x.f,x.el.value);
+      if(pz.fehler){ show("err",pz.fehler); try{ x.el.parentNode.parentNode.className="fld rot"; x.el.focus(); }catch(e){} return; }
+      if(pz.frage) fragen.push(pz.frage);
+      jobs.push({was:"feld",feld:x.f.id,wert:pz.wert});
+    }
+    fragen.reduce(function(p,f){ return p.then(function(ok){ return ok?ask(f):false; }); }, Promise.resolve(true)).then(function(ok){
+      if(!ok) return; // „Nein“: nichts senden, der Monteur korrigiert
+      ub.disabled=true;
+      jobs.reduce(function(p2,j){ return p2.then(function(){ return tkSend(pr,tk,j); }); }, Promise.resolve()).then(function(){ fVers[tk.id]=true; renderPlan(); });
+    }); };
     s4.appendChild(ub); }
   k.appendChild(s4);
   // Schritt 5: Foto nachher
@@ -741,31 +981,77 @@ if(offenF.some(function(f){return /breite|höhe|hoehe/i.test(f.name)})) s4.appen
   var p5=picsNode(tk.bilder,"n"); if(p5) s5.appendChild(p5);
   var b5=el("button","cam",fo.nachher?t("tkFotoMehr"):t("tkFoto")); b5.onclick=function(){fotoAufnehmen(pr,tk,"nachher",b5)}; s5.appendChild(b5); s5.appendChild(galBtn(pr,tk,"nachher")); k.appendChild(s5);
   // Schritt 6: Fertig / Problem (nicht bei Nachbearbeitung)
-if(done) return k;
+  // Nach FERTIG (Nachbearbeitung): Material lässt sich nachtragen (V34 – Victor 26.11.2026: „nu am putut să trec câtă folie am folosit“)
+  if(done){
+    var sN=el("div","step");
+    if(!matBox(pr,tk,sN,null)){ var mn=el("button","linkbtn","📦 "+t("tkMatNach")); mn.onclick=function(){ matAuf[tk.id]={liste:[],werte:{},extra:"",ohne:true,nach:true}; renderPlan(); }; sN.appendChild(mn); }
+    k.appendChild(sN); return k;
+  }
   var s6=el("div","step"); s6.appendChild(el("div","sh","6 · "+t("tkS6")));
   if(tk.fehlt&&tk.fehlt.length) s6.appendChild(el("div","miss",t("tkFehlt")+" "+tk.fehlt.join(", ")));
   var row6=el("div","row6");
   var bf=el("button","fin",t("tkFertig")); bf.disabled=!tk.fertigMoeglich;
   bf.onclick=function(){ ask(t("tkFertigFrage")).then(function(y){ if(!y) return;
-    // Material bei FERTIG (Anja 28.10.2026): Schätzung zeigen, Monteur ändert nur, was nicht stimmt
-    if(navigator.onLine===false||tq.length){ tkSend(pr,tk,{was:"status",status:"fertig"},bf); return; }
+    // Material bei FERTIG (Anja 28.10.2026): Schätzung zeigen, Monteur ändert nur, was nicht stimmt.
+    // V34: Die Abfrage kommt IMMER. Vorher wurde sie ohne Netz und immer dann übersprungen, wenn noch etwas wartete –
+    // also fast jedes Mal, weil das „Foto nachher“ gerade erst in die Warteschlange gegangen war. Ohne Netz gibt es
+    // keine Schätzung, dann schreibt der Monteur das Material frei hinein.
+    // Die Schätzung des Servers gibt es nur mit Netz und nur, wenn von DIESEM Schott keine Haken/Felder mehr warten (sonst rechnet er mit altem Stand).
+    // Wartende Fotos stören die Schätzung nicht.
+    if(fertigUnterwegs(tk.id)) return;
+    if(matDa[tk.id]){ // Material ist schon gemeldet, nur FERTIG fehlte (Speicher war voll) → kein zweiter Material-Dialog
+      var pf={was:"status",status:"fertig",action:"ticket",token:token,projekt:pr.id,ticket:tk.id};
+      tqPush(pr,tk,pf).then(function(da3){ if(da3){ delete matDa[tk.id]; tqFlush(); } }); return; }
+    if(navigator.onLine===false||tqFuer(tk.id).some(tqKlein)){ matAuf[tk.id]={liste:[],werte:{},extra:"",ohne:true}; renderPlan(); return; }
     bf.disabled=true; show("warn",t("tkMatLaden"));
     send({action:"ticket",token:token,projekt:pr.id,ticket:tk.id,was:"material",schaetzen:true}).then(function(r){
-      var liste=(r&&r.ok&&r.material)||[]; var box=el("div","probbox"); var inps=[];
-      box.appendChild(el("div","l",t(liste.length?"tkMatFrage":"tkMatLeer")));
-      liste.forEach(function(x){ var w=el("div","fi"); var lab=el("div","",lang==="de"?x.de:x.ro); lab.style.flex="1"; lab.style.alignSelf="center";
-        var inp=document.createElement("input"); inp.type="number"; inp.step="any"; inp.inputMode="decimal"; inp.value=x.soll; inp.style.maxWidth="90px"; inp.style.flex="none";
-        w.appendChild(lab); w.appendChild(inp); box.appendChild(w); inps.push([x,inp]); });
-      var ex=document.createElement("textarea"); ex.rows=2; ex.placeholder=t("tkMatExtra"); box.appendChild(ex);
-      var ok=el("button","prob",t("tkMatOk")); ok.style.background="var(--kommen)";
-      ok.onclick=function(){ ok.disabled=true;
-        var li=inps.map(function(q){ return {i:q[0].i,de:q[0].de,e:q[0].e,soll:q[0].soll,ist:q[1].value===""?0:Number(String(q[1].value).replace(",","."))}; });
-        tkSend(pr,tk,{was:"material",liste:li,extra:ex.value.trim(),nr:tk.nr,tname:tk.name,pname:pr.name}).then(function(){ tkSend(pr,tk,{was:"status",status:"fertig"},bf); }); };
-      box.appendChild(ok); s6.appendChild(box); bf.style.display="none";
-    }).catch(function(){ bf.disabled=false; tkSend(pr,tk,{was:"status",status:"fertig"},bf); });
+      if(fertigUnterwegs(tk.id)) return; // späte Antwort: FERTIG läuft schon
+      matAuf[tk.id]={liste:(r&&r.ok&&r.material)||[],werte:{},extra:""}; renderPlan();
+    }).catch(function(){ if(fertigUnterwegs(tk.id)) return; matAuf[tk.id]={liste:[],werte:{},extra:"",ohne:true}; renderPlan(); });
   }); };
-  row6.appendChild(bf); s6.appendChild(row6); k.appendChild(s6);
+  row6.appendChild(bf); s6.appendChild(row6);
+  if(matBox(pr,tk,s6,bf)) bf.style.display="none";
+  k.appendChild(s6);
   return k;
+}
+/* V34: Material-Dialog als gemerkter Zustand je Schott. Vorher hing er nur am gerade gezeichneten Schott und verschwand samt Eingaben,
+   sobald die Ansicht neu gezeichnet wurde (z. B. wenn im Hintergrund ein Foto fertig gesendet war). */
+var matAuf={}, matDa={}; // matDa: Material schon in der Warteliste, FERTIG konnte nicht gespeichert werden
+/* true, wenn für das Schott schon ein Material-Dialog offen ist, FERTIG/Problem in der Warteliste steht oder es schon „Geschottet“ ist */
+function fertigUnterwegs(id){ var f=tkFind(id); return !!matAuf[id]||tqFuer(id).some(function(q){return q.p&&q.p.was==="status"})||!!(f&&f.tk.status==="Geschottet"); }
+function matBox(pr,tk,ziel,bf){
+  var st=matAuf[tk.id]; if(!st) return false;
+  var box=el("div","probbox"), inps=[];
+  box.appendChild(el("div","l",t(st.liste.length?"tkMatFrage":(st.ohne?"tkMatOhne":"tkMatLeer"))));
+  st.liste.forEach(function(x,i){ var w=el("div","fi"); var lab=el("div","",lang==="de"?x.de:x.ro); lab.style.flex="1"; lab.style.alignSelf="center";
+    var inp=document.createElement("input"); inp.type="number"; inp.step="any"; inp.inputMode="decimal"; inp.value=(st.werte[i]!==undefined?st.werte[i]:x.soll); inp.style.maxWidth="90px"; inp.style.flex="none";
+    inp.oninput=function(){ st.werte[i]=inp.value; };
+    w.appendChild(lab); w.appendChild(inp); box.appendChild(w); inps.push([x,inp]); });
+  var ex=document.createElement("textarea"); ex.rows=2; ex.placeholder=t("tkMatExtra"); ex.value=st.extra||""; ex.oninput=function(){ st.extra=ex.value; }; box.appendChild(ex);
+  var ok=el("button","prob",t(st.nach?"tkMatSpeichern":"tkMatOk")); ok.style.background="var(--kommen)";
+  if(st.sendet) ok.disabled=true; // wird gerade gespeichert: neu gezeichneter Knopf bleibt gesperrt (kein Doppeltipp)
+  ok.onclick=function(){
+    if(st.sendet) return;
+    var li=inps.map(function(q){ return {i:q[0].i,de:q[0].de,e:q[0].e,soll:q[0].soll,ist:q[1].value===""?0:Number(String(q[1].value).replace(",","."))}; });
+    var extra=ex.value.trim();
+    if(st.nach&&!extra){ ex.focus(); return; } // Nachtrag ohne Text: nichts senden
+    ok.disabled=true; st.sendet=true;
+    // V34: Material UND FERTIG gehen zusammen sofort in die Warteliste (wie Fotos) und von dort der Reihe nach raus.
+    // Vorher hing FERTIG nur im Arbeitsspeicher hinter der Material-Antwort: App zu → Material gebucht, FERTIG nie gesendet;
+    // zweiter Tipp auf GATA in der Zwischenzeit → Material doppelt. Das Schott zeigt jetzt sofort „✓ Gata (în așteptare)“.
+    var kopf=function(o){ o.action="ticket"; o.token=token; o.projekt=pr.id; o.ticket=tk.id; return o; };
+    tqPush(pr,tk,kopf({was:"material",liste:li,extra:extra,nr:tk.nr,tname:tk.name,pname:pr.name})).then(function(da){
+      if(!da){ st.sendet=false; ok.disabled=false; renderPlan(); return; } // Speicher voll: Dialog und Eingaben bleiben stehen
+      delete matAuf[tk.id];
+      if(st.nach){ renderPlan(); tqFlush(); return; }
+      return tqPush(pr,tk,kopf({was:"status",status:"fertig"})).then(function(da2){
+        if(!da2){ matDa[tk.id]=true; renderPlan(); } // Material liegt schon in der Warteliste: beim nächsten GATA nur noch FERTIG nachschieben
+        tqFlush(); });
+    });
+  };
+  box.appendChild(ok);
+  if(st.nach){ var ab=el("button","linkbtn","✕"); ab.onclick=function(){ delete matAuf[tk.id]; renderPlan(); }; box.appendChild(ab); }
+  ziel.appendChild(box); return true;
 }
 
 // Aufsicht (31.10.2026): Büro-Handy wählt einen Monteur und sieht dessen Ansicht; Aktionen laufen unter seinem Vornamen
@@ -788,6 +1074,7 @@ function aufRender(){
 function aufWahl(vn){
   if(tq&&tq.length){show("warn",t("aufQueue"));tqFlush();return;}
   ALS=vn; ls("faz_als",vn);
+  matAuf={}; fEing={}; pEing={}; probAuf={}; // V34: offene Dialoge und getippte Angaben nicht zum nächsten Monteur mitnehmen
   plan=null; ls("faz_plan","");
   aufRender(); render();
   showPane("azi"); loadPlan(true);
@@ -949,10 +1236,25 @@ function start(){
 start();
 kvSave();
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").then(function(){ syncAnmelden(); }).catch(function(){}); 
-  navigator.serviceWorker.addEventListener("message", function(ev){ if(ev.data&&ev.data.typ==="gesendet"){ flush(); tqLoad().then(function(){ renderPlan(); tqFlush(); }); } }); }
+  navigator.serviceWorker.addEventListener("message", function(ev){ if(ev.data&&ev.data.typ==="gesendet"){ flush(); tqLoad().then(function(){
+    // V34: Was der Service Worker im Hintergrund gesendet hat, auch am Schott anzeigen (neuer Stand vom Server).
+    // Vorher blieb das Schott auf dem alten Stand: eben gespeicherte Felder und Haken standen wieder als offen da.
+    var nachladen=!ev.data.tickets; // alter Service Worker (bis V33) nennt keine Schotts → Plan nachladen
+    (ev.data.tickets||[]).forEach(function(x){ try{ if(!x||!x.tk) return;
+      if(x.ticket&&tkFind(x.tk)) tkUpdate(x.tk,x.ticket);
+      else if(!x.ticket){ nachladen=true; if(x.was==="status"&&tkFind(x.tk)) tkUpdate(x.tk,{status:x.status==="fertig"?"Geschottet":"zu Klären/Offen",fertigMoeglich:false}); }
+    }catch(e){} });
+    renderPlan(); tqFlush();
+    if(nachladen&&plan){ plan._t=0; loadPlan(); } // gesendet, aber ohne neuen Stand vom Server → Plan nachladen
+  }); } }); }
 // Stempel aus älteren Versionen (nur localStorage) in den Hintergrund-Speicher übernehmen
 queue.forEach(function(q){ stPut(q); });
-document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible"){ flush(); tqFlush(); } });
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState==="visible"){ flush(); tqFlush();
+    // V34: App wird wieder nach vorn geholt → Plan auffrischen, wenn er nicht von heute oder älter als 10 Minuten ist
+    if(plan&&token&&(Date.now()-(plan._t||0)>10*60*1000||(plan.azi&&plan.azi.datum!==dayKey(Date.now())))) loadPlan();
+  } else { syncAnmelden(); } // V34: beim Weglegen der App den Hintergrund-Versand anmelden, falls noch etwas wartet
+});
 showPane(ls("faz_pane")||"stempel");
 tqLoad().then(function(){ if(tq.length){ renderPlan(); tqFlush(); } });
 setTimeout(loadPlan, 1500);

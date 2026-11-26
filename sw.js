@@ -1,13 +1,15 @@
-/* FAZ Monteur-App – Service Worker (V33, 25.11.2026)
+/* FAZ Monteur-App – Service Worker (V34, 26.11.2026)
    1. App-Hülle im Handy speichern: die App startet auch ohne Netz.
    2. Hintergrund-Senden: wartende Stempel und Ticket-Eingaben werden gesendet,
       sobald wieder Netz da ist – auch wenn die App geschlossen ist (Background Sync).
    Doppelschutz: jede Eingabe hat eine feste ID (cid), der Server erkennt Wiederholungen. */
-var CACHE = "faz-v33";
-var HUELLE = ["./", "index.html", "app.js?v=33", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+var CACHE = "faz-v34";
+var HUELLE = ["./", "index.html", "app.js?v=34", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(HUELLE); }).then(function () { return self.skipWaiting(); }));
+  // V34: cache "reload" – die Dateien frisch vom Server holen, nicht aus dem Zwischenspeicher des Browsers (GitHub Pages hält 10 min).
+  // Sonst kann die alte Seite im neuen Speicher landen und offline nach app.js der alten Version suchen.
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(HUELLE.map(function (u) { return new Request(u, { cache: "reload" }); })); }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener("activate", function (e) {
@@ -87,14 +89,20 @@ function post(ep, body) {
   return fetch(ep, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), redirect: "follow" })
     .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); });
 }
-function melden() {
-  return self.clients.matchAll({ type: "window" }).then(function (cs) { cs.forEach(function (c) { c.postMessage({ typ: "gesendet" }); }); });
+/* V34: Die App bekommt mit, WAS gesendet wurde (Schott + neuer Stand vom Server). Vorher kam nur „gesendet“: Die App nahm den Eintrag
+   aus der Warteliste, zeigte das Schott aber weiter im alten Stand – eben gespeicherte Felder standen wieder als „offen“ da
+   („le-am scris, dar nu se salvează“, Victor 26.11.2026). */
+function melden(tickets) {
+  return self.clients.matchAll({ type: "window" }).then(function (cs) { cs.forEach(function (c) { c.postMessage({ typ: "gesendet", tickets: tickets || [] }); }); });
 }
 
 var laeuft = null;
 function senden() {
   if (laeuft) return laeuft;
-  var netzFehler = false, gesendet = 0;
+  // V34: rest = es ist etwas liegen geblieben (Ortung läuft noch, Wartezeit, „busy“, abgelehnt). Dann endet der Lauf mit Fehler,
+  // damit der Browser den Hintergrund-Versand von selbst wiederholt. Vorher galt der Lauf als erledigt und es kam kein neuer Versuch –
+  // ein Stempel, bei dem die App vor Ende der Ortung geschlossen wurde, blieb bis zum nächsten Öffnen liegen.
+  var netzFehler = false, gesendet = 0, rest = false;
   laeuft = db().then(function (d) {
     return wert(d, "endpoint").then(function (ep) {
       if (!ep) return;
@@ -102,22 +110,36 @@ function senden() {
       return alle(d, "st").then(function (st) {
         return st.reduce(function (p, it) {
           return p.then(function () {
-            if (netzFehler || (it.gpsBis && it.gpsBis > Date.now())) return;
+            if (netzFehler) return;
+            if (it.gpsBis && it.gpsBis > Date.now()) { rest = true; return; }
             return post(ep, it.body).then(function (r) {
               if (r && (r.ok || r.error === "alt")) { gesendet++; return weg(d, "st", it.id); }
+              rest = true;
             }, function () { netzFehler = true; });
           });
         }, Promise.resolve());
       }).then(function () {
-        // 2. Ticket-Eingaben streng der Reihe nach; beim ersten Problem anhalten (die App zeigt den Fehler)
+        // 2. Ticket-Eingaben. V34: erst die kleinen (Haken, Felder, Punkte, Material), dann Fotos und FERTIG/Problem in ihrer Reihenfolge –
+        //    wie in der App (tqNext). Lehnt der Server einen Eintrag ab, bleibt er für die App liegen (sie zeigt den Fehler);
+        //    vom selben Schott wird dann nichts Weiteres gesendet, andere Schotts laufen weiter. „busy“ = läuft gerade → ganz anhalten.
         return alle(d, "q").then(function (q) {
-          var stop = false;
-          return q.reduce(function (p, it) {
+          var stop = false, zu = {}, jetzt = Date.now();
+          var klein = function (it) { var w = it.p && it.p.was; return w !== "foto" && w !== "status"; };
+          var reihe = q.filter(klein).concat(q.filter(function (it) { return !klein(it); }));
+          return reihe.reduce(function (p, it) {
             return p.then(function () {
-              if (stop || netzFehler) return;
+              if (netzFehler) return;
+              if (stop || zu[it.tk]) { rest = true; return; }
+              if (it.next && it.next > jetzt) { zu[it.tk] = 1; rest = true; return; } // Wartezeit nach Serverfehler (setzt die App)
               return post(ep, it.p).then(function (r) {
-                if (r && r.ok) { gesendet++; return weg(d, "q", it.id); }
-                stop = true;
+                if (r && r.ok) {
+                  gesendet++;
+                  // was/status mitgeben: kommt kein neuer Stand vom Server zurück, kann die App FERTIG/Problem trotzdem am Schott zeigen
+                  return weg(d, "q", it.id).then(function () { if (it.tk) return melden([{ tk: it.tk, ticket: r.ticket || null, was: (it.p && it.p.was) || "", status: (it.p && it.p.status) || "" }]).catch(function () {}); });
+                }
+                rest = true;
+                if (r && r.error === "busy") { stop = true; return; }
+                zu[it.tk] = 1;
               }, function () { netzFehler = true; });
             });
           }, Promise.resolve());
@@ -128,6 +150,7 @@ function senden() {
     laeuft = null;
     if (gesendet) melden();
     if (netzFehler) throw new Error("kein Netz"); // Browser versucht es später erneut
+    if (rest) throw new Error("Rest in der Warteliste");
   }, function (e) { laeuft = null; throw e; });
   return laeuft;
 }
