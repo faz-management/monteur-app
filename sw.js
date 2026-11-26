@@ -1,10 +1,10 @@
-/* FAZ Monteur-App – Service Worker (V34, 26.11.2026)
+/* FAZ Monteur-App – Service Worker (V35, 26.11.2026)
    1. App-Hülle im Handy speichern: die App startet auch ohne Netz.
    2. Hintergrund-Senden: wartende Stempel und Ticket-Eingaben werden gesendet,
       sobald wieder Netz da ist – auch wenn die App geschlossen ist (Background Sync).
    Doppelschutz: jede Eingabe hat eine feste ID (cid), der Server erkennt Wiederholungen. */
-var CACHE = "faz-v34";
-var HUELLE = ["./", "index.html", "app.js?v=34", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+var CACHE = "faz-v35";
+var HUELLE = ["./", "index.html", "app.js?v=35", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", function (e) {
   // V34: cache "reload" – die Dateien frisch vom Server holen, nicht aus dem Zwischenspeicher des Browsers (GitHub Pages hält 10 min).

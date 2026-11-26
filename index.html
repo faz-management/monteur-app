@@ -132,6 +132,12 @@
   .pics .wait{position:absolute;left:0;right:0;bottom:0;background:rgba(178,107,0,.85);color:#fff;font-size:11px;text-align:center;padding:1px 0}
   .pend{display:inline-block;background:#fff4dc;color:#6b4200;border-radius:6px;padding:1px 7px;font-size:13px;margin-left:6px;vertical-align:middle}
   .chk.pend2 span{color:#6b4200}
+  /* V35: Büro-Punkte (nur lesen) und „nicht gemacht“ */
+  .chk.info span{color:var(--muted)}
+  .chk.nicht{padding-bottom:0}.chk.nicht span{text-decoration:line-through;color:var(--muted)}
+  .nichtz{margin:0 0 6px 36px;font-size:14px;color:var(--gehen);font-weight:600}.nichtz .linkbtn{margin-top:0;font-weight:400}
+  .nichtb{display:block;margin:-4px 0 6px 36px;padding:7px 12px;font-size:14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted)}
+  .nichtbox{margin:0 0 10px 0}.nichtbox .linkbtn{margin-top:0;padding:8px 4px}
 
 /* Reiter Stunden (17.11.2026) */
 .sk{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
@@ -245,7 +251,7 @@
 <div id="pv"></div>
 <div class="overlay" id="ov"><div class="dlg"><p id="ovText"></p><div class="row"><button id="ovNo"></button><button class="yes" id="ovYes"></button></div></div></div>
 
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 
 </body>
 </html>
